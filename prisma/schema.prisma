@@ -7,33 +7,40 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum AreaStatus {
+  active
+  paused
+  archived
+}
 enum ProjectStatus {
   idea
+  analysis
+  active
+  paused
+  blocked
+  frozen
+  completed
+  discarded
+}
+enum ModuleStatus {
+  planned
   active
   paused
   blocked
   completed
   discarded
-  frozen
 }
-
 enum Priority {
   critical
   high
   medium
   low
 }
-
-enum ProjectMaturity {
-  idea
-  validation
-  design
-  development
-  testing
-  production
-  maintenance
+enum Level {
+  high
+  medium
+  low
 }
-
 enum ProjectType {
   app
   web
@@ -45,13 +52,28 @@ enum ProjectType {
   business
   other
 }
-
-enum Level {
-  high
-  medium
-  low
+enum ProjectMaturity {
+  idea
+  validation
+  design
+  development
+  testing
+  production
+  maintenance
 }
-
+enum ModuleType {
+  feature
+  backend
+  frontend
+  database
+  design
+  content
+  infrastructure
+  legal_admin
+  commercial
+  documentation
+  other
+}
 enum TaskStatus {
   inbox
   pending
@@ -61,7 +83,6 @@ enum TaskStatus {
   completed
   discarded
 }
-
 enum TaskContext {
   development
   design
@@ -74,95 +95,118 @@ enum TaskContext {
   call
   other
 }
-
-enum AssetType {
+enum DocumentType {
+  specification
+  brief
+  design
+  contract
+  note
+  research
+  technical
+  commercial
+  legal
+  other
+}
+enum ResourceType {
   domain
   hosting
   database
-  email
-  api
   repository
+  api
+  design_file
+  provider
+  tool
+  account
   cloud_service
   payment_gateway
-  social_media
-  design_file
   analytics
   backup
   server
-  legal_tax
   other
 }
-
-enum AssetStatus {
+enum ResourceStatus {
   active
   inactive
   pending
   expired
   cancelled
 }
-
-enum IdeaStatus {
-  captured
-  evaluating
-  future
-  converted_to_project
+enum DecisionStatus {
+  active
+  revised
   discarded
 }
-
-enum DueItemType {
-  domain
-  hosting
-  subscription
-  license
-  api
-  payment
-  backup
-  ssl
-  tax
+enum ImportantDateType {
+  deadline
+  milestone
+  launch
   review
+  renewal
+  payment
+  meeting
+  delivery
   other
 }
-
-enum DueItemStatus {
+enum DateStatus {
   pending
   done
   overdue
   cancelled
 }
-
-enum RecurrenceType {
-  none
-  weekly
-  monthly
-  quarterly
-  yearly
-  custom
-}
-
-enum ReviewType {
-  weekly_review
-  monthly_review
-  project_review
-  backup_review
-  financial_review
-  content_review
-  system_review
+enum AlertType {
+  overdue_task
+  missing_next_action
+  upcoming_date
+  blocked_project
+  blocked_module
+  inactive_project
+  inactive_module
+  too_many_active_projects
+  manual
   other
 }
-
-enum Frequency {
-  weekly
-  monthly
-  quarterly
-  yearly
-  custom
+enum AlertSeverity {
+  low
+  medium
+  high
+  critical
 }
-
-enum ReviewStatus {
+enum AlertStatus {
+  active
+  resolved
+  dismissed
+}
+enum InboxItemType {
+  capture
+  task
+  document
+  credential
+  resource
+  decision
+  important_date
+  alert
+  project
+  module
+}
+enum InboxStatus {
   pending
-  done
-  overdue
-  cancelled
+  processed
+  discarded
+}
+enum FocusScopeType {
+  area
+  project
+  module
+}
+enum ShortcutType {
+  system
+  area
+  project
+  module
+  resource
+  inbox
+  alerts
+  custom
 }
 
 model User {
@@ -175,222 +219,301 @@ model User {
 }
 
 model Area {
-  id          String         @id @default(cuid())
-  name        String         @unique
+  id          String     @id @default(cuid())
+  name        String     @unique
   description String?
   color       String?
+  status      AreaStatus @default(active)
   projects    Project[]
+  modules     ProjectModule[]
   tasks       Task[]
-  assets      DigitalAsset[]
-  ideas       Idea[]
-  reviews     Review[]
-  notes       Note[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  documents   Document[]
+  credentials Credential[]
+  resources   Resource[]
+  decisions   Decision[]
+  dates       ImportantDate[]
+  alerts      Alert[]
+  activities  ActivityLog[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
 model Project {
-  id                  String                        @id @default(cuid())
-  name                String
-  description         String?
-  areaId              String
-  area                Area                          @relation(fields: [areaId], references: [id], onDelete: Restrict)
-  status              ProjectStatus                 @default(idea)
-  priority            Priority                      @default(medium)
-  maturity            ProjectMaturity               @default(idea)
-  projectType         ProjectType                   @default(other)
-  impactLevel         Level?
-  effortLevel         Level?
-  technicalComplexity Level?
-  currentEnergy       Level?
-  startDate           DateTime?
-  targetDate          DateTime?
-  reviewDate          DateTime?
-  nextAction          String?
-  blockedReason       String?
-  progressPercentage  Int                           @default(0)
-  isFrozen            Boolean                       @default(false)
-  frozenReason        String?
-  frozenUntil         DateTime?
-  tasks               Task[]
-  assets              DigitalAsset[]
-  ideas               Idea[]
-  dueItems            DueItem[]
-  reviews             Review[]
-  notes               Note[]
-  weeklyMain          WeeklyFocus[]                 @relation("MainFocus")
-  secondaryIn         WeeklyFocusSecondaryProject[]
-  avoidedIn           WeeklyFocusAvoidProject[]
-  createdAt           DateTime                      @default(now())
-  updatedAt           DateTime                      @updatedAt
+  id                 String          @id @default(cuid())
+  name               String
+  description        String?
+  areaId             String
+  area               Area            @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  status             ProjectStatus   @default(idea)
+  priority           Priority        @default(medium)
+  projectType        ProjectType     @default(other)
+  maturity           ProjectMaturity @default(idea)
+  nextAction         String?
+  blockedReason      String?
+  progressPercentage Int             @default(0)
+  startDate          DateTime?
+  targetDate         DateTime?
+  reviewDate         DateTime?
+  isFrozen           Boolean         @default(false)
+  frozenReason       String?
+  frozenUntil        DateTime?
+  modules            ProjectModule[]
+  tasks              Task[]
+  documents          Document[]
+  credentials        Credential[]
+  resources          Resource[]
+  decisions          Decision[]
+  dates              ImportantDate[]
+  alerts             Alert[]
+  activities         ActivityLog[]
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
 
-  @@index([status, priority])
-  @@index([areaId])
+  @@index([areaId, status])
+}
+
+model ProjectModule {
+  id                 String       @id @default(cuid())
+  name               String
+  description        String?
+  areaId             String
+  area               Area         @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  projectId          String
+  project            Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status             ModuleStatus @default(planned)
+  priority           Priority     @default(medium)
+  moduleType         ModuleType   @default(other)
+  nextAction         String?
+  blockedReason      String?
+  progressPercentage Int          @default(0)
+  targetDate         DateTime?
+  reviewDate         DateTime?
+  tasks              Task[]
+  documents          Document[]
+  credentials        Credential[]
+  resources          Resource[]
+  decisions          Decision[]
+  dates              ImportantDate[]
+  alerts             Alert[]
+  activities         ActivityLog[]
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@unique([projectId, name])
+  @@index([areaId, projectId, status])
 }
 
 model Task {
-  id               String       @id @default(cuid())
+  id               String        @id @default(cuid())
   title            String
   description      String?
+  areaId           String
+  area             Area          @relation(fields: [areaId], references: [id], onDelete: Cascade)
   projectId        String?
-  project          Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  areaId           String?
-  area             Area?        @relation(fields: [areaId], references: [id], onDelete: SetNull)
-  status           TaskStatus   @default(inbox)
-  priority         Priority     @default(medium)
+  project          Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  moduleId         String?
+  module           ProjectModule? @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  status           TaskStatus    @default(pending)
+  priority         Priority      @default(medium)
   dueDate          DateTime?
   startDate        DateTime?
   estimatedMinutes Int?
   energyLevel      Level?
   context          TaskContext?
-  isToday          Boolean      @default(false)
-  isCritical       Boolean      @default(false)
   completedAt      DateTime?
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
+  @@index([areaId, projectId, moduleId])
   @@index([status, dueDate])
-  @@index([projectId])
 }
 
-model DigitalAsset {
-  id                       String      @id @default(cuid())
-  name                     String
-  projectId                String?
-  project                  Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  areaId                   String?
-  area                     Area?       @relation(fields: [areaId], references: [id], onDelete: SetNull)
-  type                     AssetType
-  provider                 String?
-  url                      String?
-  accountEmail             String?
-  username                 String?
-  passwordManagerReference String?
-  notes                    String?
-  renewalDate              DateTime?
-  cost                     Decimal?    @db.Decimal(12, 2)
-  currency                 String?
-  status                   AssetStatus @default(active)
-  dueItems                 DueItem[]
-  createdAt                DateTime    @default(now())
-  updatedAt                DateTime    @updatedAt
-
-  @@index([renewalDate, status])
-}
-
-model Idea {
-  id          String     @id @default(cuid())
+model Document {
+  id          String        @id @default(cuid())
   title       String
   description String?
-  areaId      String?
-  area        Area?      @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  areaId      String
+  area        Area          @relation(fields: [areaId], references: [id], onDelete: Cascade)
   projectId   String?
-  project     Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  potential   Level?
-  complexity  Level?
-  status      IdeaStatus @default(captured)
-  reviewDate  DateTime?
+  project     Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  moduleId    String?
+  module      ProjectModule? @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  type        DocumentType  @default(other)
+  url         String?
+  filePath    String?
   notes       String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([areaId, projectId, moduleId])
 }
 
-model DueItem {
+model Credential {
+  id                       String         @id @default(cuid())
+  name                     String
+  areaId                   String
+  area                     Area           @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  projectId                String?
+  project                  Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  moduleId                 String?
+  module                   ProjectModule? @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  serviceName              String?
+  url                      String?
+  username                 String?
+  email                    String?
+  passwordManagerReference String?
+  notes                    String?
+  has2FA                   Boolean        @default(false)
+  recoveryEmail            String?
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+
+  @@index([areaId, projectId, moduleId])
+}
+
+model Resource {
+  id          String         @id @default(cuid())
+  name        String
+  areaId      String
+  area        Area           @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  moduleId    String?
+  module      ProjectModule? @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  type        ResourceType   @default(other)
+  provider    String?
+  url         String?
+  notes       String?
+  renewalDate DateTime?
+  status      ResourceStatus @default(active)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([areaId, projectId, moduleId])
+}
+
+model Decision {
   id           String         @id @default(cuid())
   title        String
   description  String?
+  areaId       String
+  area         Area           @relation(fields: [areaId], references: [id], onDelete: Cascade)
   projectId    String?
-  project      Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  assetId      String?
-  asset        DigitalAsset?  @relation(fields: [assetId], references: [id], onDelete: SetNull)
-  type         DueItemType
-  dueDate      DateTime
-  reminderDate DateTime?
-  recurrence   RecurrenceType @default(none)
-  status       DueItemStatus  @default(pending)
-  amount       Decimal?       @db.Decimal(12, 2)
-  currency     String?
+  project      Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  moduleId     String?
+  module       ProjectModule? @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  reason       String?
+  consequences String?
+  status       DecisionStatus @default(active)
+  decidedAt    DateTime?
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
-  @@index([dueDate, status])
+  @@index([areaId, projectId, moduleId])
 }
 
-model Review {
-  id             String       @id @default(cuid())
-  title          String
-  description    String?
-  projectId      String?
-  project        Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  areaId         String?
-  area           Area?        @relation(fields: [areaId], references: [id], onDelete: SetNull)
-  type           ReviewType
-  frequency      Frequency
-  nextReviewDate DateTime
-  lastReviewDate DateTime?
-  status         ReviewStatus @default(pending)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+model ImportantDate {
+  id           String            @id @default(cuid())
+  title        String
+  description  String?
+  areaId       String
+  area         Area              @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  projectId    String?
+  project      Project?          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  moduleId     String?
+  module       ProjectModule?    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  type         ImportantDateType @default(other)
+  date         DateTime
+  reminderDate DateTime?
+  status       DateStatus        @default(pending)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
-  @@index([nextReviewDate, status])
+  @@index([areaId, projectId, moduleId])
+  @@index([status, date])
+}
+
+model Alert {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  areaId      String
+  area        Area           @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  moduleId    String?
+  module      ProjectModule? @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  type        AlertType      @default(manual)
+  severity    AlertSeverity  @default(medium)
+  status      AlertStatus    @default(active)
+  source      String?
+  createdAt   DateTime       @default(now())
+  resolvedAt  DateTime?
+
+  @@index([areaId, projectId, moduleId])
+  @@index([status, severity])
+}
+
+model InboxItem {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  type        InboxItemType @default(capture)
+  status      InboxStatus   @default(pending)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 model WeeklyFocus {
-  id                String                        @id @default(cuid())
-  weekStartDate     DateTime
-  weekEndDate       DateTime
-  mainProjectId     String?
-  mainProject       Project?                      @relation("MainFocus", fields: [mainProjectId], references: [id], onDelete: SetNull)
-  weeklyGoal        String?
-  notes             String?
-  secondaryProjects WeeklyFocusSecondaryProject[]
-  avoidProjects     WeeklyFocusAvoidProject[]
-  createdAt         DateTime                      @default(now())
-  updatedAt         DateTime                      @updatedAt
+  id                 String         @id @default(cuid())
+  weekStartDate      DateTime
+  weekEndDate        DateTime
+  mainScopeType      FocusScopeType
+  mainAreaId         String?
+  mainProjectId      String?
+  mainModuleId       String?
+  secondaryScopes    Json           @default("[]")
+  avoidScopes        Json           @default("[]")
+  weeklyGoal         String?
+  notes              String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
   @@index([weekStartDate, weekEndDate])
 }
 
-model WeeklyFocusSecondaryProject {
-  id            String      @id @default(cuid())
-  weeklyFocusId String
-  weeklyFocus   WeeklyFocus @relation(fields: [weeklyFocusId], references: [id], onDelete: Cascade)
-  projectId     String
-  project       Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@unique([weeklyFocusId, projectId])
-}
-
-model WeeklyFocusAvoidProject {
-  id            String      @id @default(cuid())
-  weeklyFocusId String
-  weeklyFocus   WeeklyFocus @relation(fields: [weeklyFocusId], references: [id], onDelete: Cascade)
-  projectId     String
-  project       Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-
-  @@unique([weeklyFocusId, projectId])
-}
-
-model Note {
-  id        String   @id @default(cuid())
-  title     String
-  content   String
-  projectId String?
-  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  areaId    String?
-  area      Area?    @relation(fields: [areaId], references: [id], onDelete: SetNull)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 model ActivityLog {
-  id          String   @id @default(cuid())
+  id          String         @id @default(cuid())
+  areaId      String?
+  area        Area?          @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  moduleId    String?
+  module      ProjectModule? @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   entityType  String
   entityId    String
   action      String
   description String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime       @default(now())
 
-  @@index([entityType, entityId])
+  @@index([areaId, projectId, moduleId])
   @@index([createdAt])
+}
+
+model DesktopShortcut {
+  id           String        @id @default(cuid())
+  name         String
+  description  String?
+  type         ShortcutType  @default(custom)
+  icon         String?
+  color        String?
+  targetType   String?
+  targetId     String?
+  sortOrder    Int           @default(0)
+  isPinned     Boolean       @default(false)
+  lastOpenedAt DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([sortOrder, isPinned])
 }

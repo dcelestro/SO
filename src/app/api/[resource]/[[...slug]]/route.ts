@@ -16,6 +16,7 @@ const models: Record<string, string> = {
   "weekly-focus": "weeklyFocus",
   notes: "note",
   "activity-log": "activityLog",
+  "desktop-shortcuts": "desktopShortcut",
 };
 const includes: Record<string, object> = {
   projects: {

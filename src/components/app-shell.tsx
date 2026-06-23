@@ -4,13 +4,16 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import {
   Activity,
+  Archive,
   BarChart3,
+  Bell,
   Boxes,
   CalendarClock,
   CheckSquare2,
   ChevronDown,
   FolderKanban,
   Home,
+  Inbox,
   Lightbulb,
   Menu,
   Plus,
@@ -70,6 +73,15 @@ const groups: NavGroup[] = [
       ["/kpis", "KPIs", BarChart3],
     ],
   },
+  {
+    label: "Extras",
+    items: [
+      ["/dashboard", "Inbox", Inbox],
+      ["/dashboard", "Alertas", Bell],
+      ["/dashboard", "Archivo", Archive],
+      ["/settings", "Configuración", Settings],
+    ],
+  },
 ];
 function Nav({ close }: { close?: () => void }) {
   const path = usePathname();
@@ -103,32 +115,11 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-[#f7f8fa] text-slate-950">
-        <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">
-          <div className="flex h-16 items-center gap-3 border-b px-5">
-            <div className="grid size-8 place-items-center rounded-lg bg-slate-950 text-sm font-bold text-white">
-              N
-            </div>
-            <div>
-              <p className="text-sm font-semibold">Nexo</p>
-              <p className="text-xs text-slate-400">Centro de control</p>
-            </div>
-          </div>
-          <Nav />
-          <div className="border-t p-3">
-            <Link
-              href="/settings"
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-500 hover:bg-slate-100"
-            >
-              <Settings className="size-4" />
-              Configuración
-            </Link>
-          </div>
-        </aside>
-        <div className="lg:pl-64">
+        <div>
           <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200/80 bg-white/90 px-4 backdrop-blur md:px-7">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden">
+                <Button variant="ghost" size="icon">
                   <Menu />
                 </Button>
               </SheetTrigger>

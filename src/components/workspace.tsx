@@ -44,6 +44,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  DesktopShell,
+  DesktopWorkspace,
+} from "@/components/desktop-shell";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -170,7 +174,11 @@ export function Workspace({ section, id }: { section: string; id?: string }) {
   return <Settings />;
 }
 function Dashboard() {
-  return <DashboardV2 />;
+  return (
+    <DesktopShell>
+      <DesktopWorkspace />
+    </DesktopShell>
+  );
 }
 
 function DashboardV2() {
