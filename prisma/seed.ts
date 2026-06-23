@@ -1,20 +1,60 @@
-import { PrismaClient, Priority, ProjectMaturity, ProjectStatus, ProjectType } from "@prisma/client";
+import {
+  PrismaClient,
+  ProjectMaturity,
+  ProjectStatus,
+  ProjectType,
+  ShortcutType,
+} from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const db = new PrismaClient();
-const day = (offset:number) => new Date(Date.now()+offset*86400000);
 
-async function main() {
+const areaDefinitions = [
+  { name: "Abundia", color: "#2563eb" },
+  { name: "Ecommerce", color: "#059669" },
+  { name: "Newsletter", color: "#7c3aed" },
+  { name: "Apps personales", color: "#d97706" },
+  { name: "Infraestructura", color: "#475569" },
+] as const;
+
+const projectDefinitions = [
+  { area: "Abundia", name: "Abundia Agenda", type: ProjectType.app },
+  { area: "Abundia", name: "Portal Abundia", type: ProjectType.web },
+  { area: "Abundia", name: "Landing Abundia", type: ProjectType.web },
+  { area: "Ecommerce", name: "Ecommerce productos capilares", type: ProjectType.ecommerce },
+  { area: "Newsletter", name: "Newsletter cuidado capilar", type: ProjectType.newsletter },
+  { area: "Apps personales", name: "App de inversiones", type: ProjectType.app },
+] as const;
+
+const modulesByProject: Record<string, string[]> = {
+  "Abundia Agenda": ["Calendario", "Clientes", "Turnos", "Notificaciones"],
+  "Portal Abundia": ["Autenticación", "Dashboard cliente", "Suscripciones", "Soporte técnico"],
+  "Landing Abundia": ["Hero", "Pricing", "Formulario de contacto", "SEO"],
+  "Ecommerce productos capilares": ["Catálogo", "Proveedores", "Checkout", "Marketing"],
+  "Newsletter cuidado capilar": ["Fuentes", "Calendario editorial", "Redacción", "Envíos"],
+  "App de inversiones": ["Portfolio", "Seguimiento de activos", "Alertas", "APIs financieras"],
+};
+
+async function clearDatabase() {
   await db.activityLog.deleteMany();
+  await db.desktopShortcut.deleteMany();
   await db.weeklyFocus.deleteMany();
-  await db.review.deleteMany();
-  await db.dueItem.deleteMany();
-  await db.idea.deleteMany();
-  await db.digitalAsset.deleteMany();
+  await db.inboxItem.deleteMany();
+  await db.alert.deleteMany();
+  await db.importantDate.deleteMany();
+  await db.decision.deleteMany();
+  await db.resource.deleteMany();
+  await db.credential.deleteMany();
+  await db.document.deleteMany();
   await db.task.deleteMany();
+  await db.projectModule.deleteMany();
   await db.project.deleteMany();
   await db.area.deleteMany();
   await db.user.deleteMany();
+}
+
+async function main() {
+  await clearDatabase();
 
   await db.user.create({
     data: {
@@ -24,336 +64,108 @@ async function main() {
     },
   });
 
-  const names = [
-    "Abundia",
-    "Apps personales",
-    "Webs",
-    "Ecommerce",
-    "Newsletter",
-    "Infraestructura",
-    "Administración",
-  ];
-  const areas = await Promise.all(
-    names.map((name, i) =>
-      db.area.create({
-        data: {
-          name,
-          color: [
-            "#1e293b",
-            "#2563eb",
-            "#64748b",
-            "#059669",
-            "#7c3aed",
-            "#d97706",
-            "#475569",
-          ][i],
-        },
-      }),
-    ),
-  );
+  const areas = new Map<string, { id: string }>();
+  for (const definition of areaDefinitions) {
+    const area = await db.area.create({ data: definition });
+    areas.set(area.name, area);
+  }
 
-  const make = (
-    name: string,
-    areaId: string,
-    status: ProjectStatus,
-    priority: Priority,
-    maturity: ProjectMaturity,
-    projectType: ProjectType,
-    nextAction?: string,
-  ) =>
-    db.project.create({
+  const projects = new Map<string, { id: string; areaId: string }>();
+  for (const definition of projectDefinitions) {
+    const area = areas.get(definition.area)!;
+    const project = await db.project.create({
       data: {
-        name,
-        areaId,
-        status,
-        priority,
-        maturity,
-        projectType,
-        nextAction,
-        description: `Centro de trabajo para ${name}.`,
-        targetDate: day(30),
-        progressPercentage: status === "completed" ? 100 : 35,
+        name: definition.name,
+        description: `Centro de trabajo para ${definition.name}.`,
+        areaId: area.id,
+        status: ProjectStatus.active,
+        maturity: ProjectMaturity.development,
+        projectType: definition.type,
+        nextAction: "Definir el próximo entregable concreto",
       },
     });
+    projects.set(project.name, project);
+  }
 
-  const projects = await Promise.all([
-    make(
-      "Abundia Agenda",
-      areas[0].id,
-      "active",
-      "critical",
-      "development",
-      "app",
-      "Cerrar alcance funcional del MVP",
-    ),
-    make("Portal Abundia", areas[0].id, "blocked", "high", "testing", "web"),
-    make(
-      "Landing Abundia",
-      areas[0].id,
-      "active",
-      "medium",
-      "production",
-      "web",
-      "Revisar conversión del hero",
-    ),
-    make("Ticketera Abundia", areas[0].id, "paused", "low", "design", "app"),
-    make(
-      "Sistema de pagos Abundia",
-      areas[0].id,
-      "active",
-      "high",
-      "validation",
-      "business",
-      "Validar flujo de suscripción",
-    ),
-    make("App de inversiones", areas[1].id, "frozen", "low", "design", "app"),
-    make(
-      "App peluquería",
-      areas[1].id,
-      "active",
-      "medium",
-      "production",
-      "app",
-      "Probar cierre de caja",
-    ),
-    make(
-      "App gestión de proyectos",
-      areas[1].id,
-      "active",
-      "critical",
-      "development",
-      "app",
-      "Completar navegación del MVP",
-    ),
-    make(
-      "Ecommerce productos capilares",
-      areas[3].id,
-      "active",
-      "high",
-      "testing",
-      "ecommerce",
-      "Cargar catálogo inicial",
-    ),
-    make(
-      "Newsletter peluquería",
-      areas[4].id,
-      "active",
-      "medium",
-      "production",
-      "newsletter",
-      "Escribir edición del viernes",
-    ),
-    make(
-      "Servidor personal",
-      areas[5].id,
-      "blocked",
-      "high",
-      "maintenance",
-      "infrastructure",
-    ),
-  ]);
+  const modules = new Map<string, { id: string }>();
+  for (const [projectName, moduleNames] of Object.entries(modulesByProject)) {
+    const project = projects.get(projectName)!;
+    for (const name of moduleNames) {
+      const projectModule = await db.projectModule.create({
+        data: { name, areaId: project.areaId, projectId: project.id, status: "active" },
+      });
+      modules.set(`${projectName}/${name}`, projectModule);
+    }
+  }
 
-  await db.project.update({
-    where: { id: projects[5].id },
+  const abundia = areas.get("Abundia")!;
+  const agenda = projects.get("Abundia Agenda")!;
+  const calendario = modules.get("Abundia Agenda/Calendario")!;
+
+  await db.task.create({
     data: {
-      isFrozen: true,
-      frozenReason: "Reducir frentes abiertos",
-      frozenUntil: day(45),
+      title: "Definir alcance del próximo incremento",
+      areaId: abundia.id,
+      projectId: agenda.id,
+      moduleId: calendario.id,
+      status: "in_progress",
+      priority: "high",
+      context: "development",
     },
   });
-
-  await db.task.createMany({
-    data: [
-      {
-        title: "Definir módulos mínimos del MVP",
-        projectId: projects[0].id,
-        areaId: areas[0].id,
-        status: "in_progress",
-        priority: "critical",
-        dueDate: day(0),
-        isToday: true,
-        isCritical: true,
-        context: "development",
-      },
-      {
-        title: "Resolver credenciales de staging",
-        projectId: projects[1].id,
-        areaId: areas[0].id,
-        status: "blocked",
-        priority: "high",
-        dueDate: day(-2),
-        isCritical: true,
-        context: "admin",
-      },
-      {
-        title: "Revisar catálogo y precios",
-        projectId: projects[8].id,
-        areaId: areas[3].id,
-        status: "pending",
-        priority: "high",
-        dueDate: day(2),
-        isToday: true,
-        context: "review",
-      },
-      {
-        title: "Borrador de newsletter",
-        projectId: projects[9].id,
-        areaId: areas[4].id,
-        status: "pending",
-        priority: "medium",
-        dueDate: day(4),
-        context: "content",
-      },
-      {
-        title: "Procesar notas sueltas",
-        status: "inbox",
-        priority: "low",
-        isToday: true,
-      },
-    ],
+  await db.document.create({
+    data: { title: "Alcance inicial", areaId: abundia.id, projectId: agenda.id, type: "specification" },
   });
-
-  const asset = await db.digitalAsset.create({
-    data: {
-      name: "Dominio abundia.app",
-      projectId: projects[0].id,
-      areaId: areas[0].id,
-      type: "domain",
-      provider: "Cloudflare",
-      url: "https://abundia.app",
-      accountEmail: "admin@abundia.app",
-      passwordManagerReference: "Bitwarden: Abundia / Dominio",
-      renewalDate: day(18),
-      cost: 18,
-      currency: "USD",
-      status: "active",
-    },
+  await db.credential.create({
+    data: { name: "Cuenta de desarrollo", areaId: abundia.id, projectId: agenda.id, serviceName: "Nexo local" },
   });
-
-  await db.dueItem.createMany({
-    data: [
-      {
-        title: "Renovar dominio abundia.app",
-        projectId: projects[0].id,
-        assetId: asset.id,
-        type: "domain",
-        dueDate: day(18),
-        reminderDate: day(11),
-        recurrence: "yearly",
-        status: "pending",
-        amount: 18,
-        currency: "USD",
-      },
-      {
-        title: "Backup del servidor",
-        projectId: projects[10].id,
-        type: "backup",
-        dueDate: day(-1),
-        recurrence: "monthly",
-        status: "pending",
-      },
-      {
-        title: "Licencia de diseño",
-        projectId: projects[8].id,
-        type: "license",
-        dueDate: day(6),
-        recurrence: "monthly",
-        status: "pending",
-        amount: 15,
-        currency: "USD",
-      },
-    ],
+  await db.resource.create({
+    data: { name: "Repositorio Abundia Agenda", areaId: abundia.id, projectId: agenda.id, type: "repository" },
   });
-
-  await db.idea.createMany({
-    data: [
-      {
-        title: "Biblioteca de decisiones",
-        description: "Registrar por qué se eligió cada camino.",
-        areaId: areas[1].id,
-        potential: "high",
-        complexity: "medium",
-        status: "evaluating",
-        reviewDate: day(14),
-      },
-      {
-        title: "Radar de costos SaaS",
-        areaId: areas[6].id,
-        potential: "medium",
-        complexity: "low",
-        status: "captured",
-        reviewDate: day(21),
-      },
-    ],
+  await db.decision.create({
+    data: { title: "Mantener arquitectura jerárquica V2", areaId: abundia.id, projectId: agenda.id, decidedAt: new Date() },
   });
-
-  await db.review.createMany({
-    data: [
-      {
-        title: "Revisión semanal de foco",
-        type: "weekly_review",
-        frequency: "weekly",
-        nextReviewDate: day(2),
-        status: "pending",
-      },
-      {
-        title: "Revisión de backups",
-        projectId: projects[10].id,
-        areaId: areas[5].id,
-        type: "backup_review",
-        frequency: "monthly",
-        nextReviewDate: day(-3),
-        status: "pending",
-      },
-    ],
+  await db.importantDate.create({
+    data: { title: "Revisión del alcance", areaId: abundia.id, projectId: agenda.id, type: "review", date: new Date(Date.now() + 7 * 86_400_000) },
   });
+  await db.alert.create({
+    data: { title: "Revisar próxima acción", areaId: abundia.id, projectId: agenda.id, type: "manual", severity: "low" },
+  });
+  await db.inboxItem.create({ data: { title: "Procesar notas iniciales" } });
 
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
-  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
-
+  const weekStart = new Date();
+  weekStart.setHours(0, 0, 0, 0);
+  weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
   await db.weeklyFocus.create({
     data: {
-      weekStartDate: start,
-      weekEndDate: end,
-      mainProjectId: projects[0].id,
-      weeklyGoal: "Cerrar el alcance funcional y dejar el MVP listo para validar.",
-      notes: "Proteger dos bloques de trabajo profundo.",
-      secondaryScopes: [
-        { projectId: projects[8].id, label: "Productos capilares" },
-        { projectId: projects[9].id, label: "Newsletter peluquería" },
-      ],
-      avoidScopes: [
-        { projectId: projects[5].id, label: "App de inversiones" },
-        { projectId: projects[3].id, label: "Ticketera Abundia" },
-      ],
+      weekStartDate: weekStart,
+      weekEndDate: weekEnd,
+      mainScopeType: "project",
+      mainAreaId: abundia.id,
+      mainProjectId: agenda.id,
+      weeklyGoal: "Estabilizar la base actual de Nexo.",
     },
   });
 
-  await db.activityLog.createMany({
-    data: [
-      {
-        entityType: "Project",
-        entityId: projects[0].id,
-        action: "created",
-        description: "Proyecto creado",
-      },
-      {
-        entityType: "Task",
-        entityId: projects[0].id,
-        action: "completed",
-        description: "Tarea de arquitectura completada",
-      },
-      {
-        entityType: "Project",
-        entityId: projects[5].id,
-        action: "frozen",
-        description: "Proyecto enviado al congelador",
-      },
-    ],
+  const shortcuts = [
+    { name: "Explorador", type: ShortcutType.system, targetType: "explorer", icon: "FolderTree", color: "#475569", sortOrder: 0, isPinned: true },
+    { name: "Abundia", type: ShortcutType.area, targetType: "area", targetId: abundia.id, icon: "Building2", color: "#2563eb", sortOrder: 1, isPinned: true },
+    { name: "Ecommerce", type: ShortcutType.area, targetType: "area", targetId: areas.get("Ecommerce")!.id, icon: "ShoppingBag", color: "#059669", sortOrder: 2, isPinned: true },
+    { name: "Newsletter", type: ShortcutType.area, targetType: "area", targetId: areas.get("Newsletter")!.id, icon: "Mail", color: "#7c3aed", sortOrder: 3, isPinned: true },
+    { name: "Inbox", type: ShortcutType.inbox, targetType: "inbox", icon: "Inbox", color: "#d97706", sortOrder: 4, isPinned: false },
+    { name: "Alertas", type: ShortcutType.alerts, targetType: "alerts", icon: "AlertCircle", color: "#dc2626", sortOrder: 5, isPinned: false },
+  ];
+  await db.desktopShortcut.createMany({ data: shortcuts });
+  await db.activityLog.create({
+    data: { areaId: abundia.id, projectId: agenda.id, entityType: "Project", entityId: agenda.id, action: "seeded", description: "Datos jerárquicos iniciales creados" },
   });
 }
 
-main().finally(() => db.$disconnect());
+main()
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  })
+  .finally(() => db.$disconnect());

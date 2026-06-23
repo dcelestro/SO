@@ -1,91 +1,15 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import {
-  Archive,
-  Bell,
-  Compass,
-  Folder,
-  Home,
-  Inbox,
-  Layers,
-  Menu,
-  Target,
-  X,
-  CheckSquare2,
-  FolderKanban,
-  Lightbulb,
-  Activity,
-  BarChart3,
-  CalendarClock,
-  Snowflake,
-  ShieldCheck,
-} from "lucide-react";
+import { type ReactNode } from "react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 import { DesktopShortcutGrid } from "@/components/desktop-shortcuts";
-
-const sidebarGroups = [
-  {
-    label: "Accesos",
-    items: [
-      { href: "/dashboard", label: "Escritorio", Icon: Home },
-      { label: "Explorador", Icon: Compass },
-      { label: "Inbox", Icon: Inbox },
-      { label: "Alertas", Icon: Bell },
-      { label: "Recursos", Icon: Layers },
-      { label: "Archivo", Icon: Archive },
-      { href: "/settings", label: "Configuración", Icon: Folder },
-    ],
-  },
-  {
-    label: "Operación",
-    items: [
-      { href: "/tasks", label: "Tareas", Icon: CheckSquare2 },
-      { href: "/focus", label: "Foco semanal", Icon: Target },
-    ],
-  },
-  {
-    label: "Proyectos",
-    items: [
-      { href: "/projects", label: "Proyectos", Icon: FolderKanban },
-      { href: "/ecosystem", label: "Ecosistema", Icon: Compass },
-      { href: "/freezer", label: "Congelador", Icon: Snowflake },
-    ],
-  },
-  {
-    label: "Recursos",
-    items: [
-      { href: "/assets", label: "Activos", Icon: ShieldCheck },
-      { href: "/due-items", label: "Vencimientos", Icon: CalendarClock },
-    ],
-  },
-  {
-    label: "Gestión",
-    items: [
-      { href: "/ideas", label: "Ideas", Icon: Lightbulb },
-      { href: "/reviews", label: "Revisiones", Icon: Activity },
-      { href: "/kpis", label: "KPIs", Icon: BarChart3 },
-    ],
-  },
-];
 
 type DesktopShellProps = {
   children: ReactNode;

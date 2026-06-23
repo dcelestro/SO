@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { createElement, useState } from "react";
 import * as Icons from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
@@ -31,6 +31,10 @@ function getIcon(name?: string) {
   return iconMap[name];
 }
 
+function renderIcon(name: string | undefined, className: string) {
+  return createElement(getIcon(name), { className });
+}
+
 interface DesktopShortcutItemProps {
   shortcut: DesktopShortcut;
   onOpen: (shortcut: DesktopShortcut) => void;
@@ -39,7 +43,6 @@ interface DesktopShortcutItemProps {
 }
 
 function DesktopShortcutItem({ shortcut, onOpen, onEdit, onDelete }: DesktopShortcutItemProps) {
-  const IconComponent = getIcon(shortcut.icon);
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -47,10 +50,11 @@ function DesktopShortcutItem({ shortcut, onOpen, onEdit, onDelete }: DesktopShor
       {/* Icon */}
       <button
         onClick={() => onOpen(shortcut)}
+        aria-label={`Abrir ${shortcut.name}`}
         className="w-14 h-14 rounded-lg flex items-center justify-center transition-all group-hover:scale-110"
         style={{ backgroundColor: shortcut.color || "#64748b" }}
       >
-        <IconComponent className="w-7 h-7 text-white" />
+        {renderIcon(shortcut.icon, "w-7 h-7 text-white")}
       </button>
 
       {/* Name */}
@@ -64,6 +68,7 @@ function DesktopShortcutItem({ shortcut, onOpen, onEdit, onDelete }: DesktopShor
           <DialogTrigger asChild>
             <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
               <Icons.MoreVertical className="w-4 h-4" />
+              <span className="sr-only">Opciones de {shortcut.name}</span>
             </Button>
           </DialogTrigger>
           <DialogContent className="w-fit">
@@ -105,7 +110,7 @@ interface ShortcutFormProps {
   title: string;
 }
 
-function ShortcutForm({ initialData, onSubmit, onClose, title }: ShortcutFormProps) {
+function ShortcutForm({ initialData, onSubmit, onClose }: ShortcutFormProps) {
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState(initialData?.name || "");
   const [description, setDescription] = useState(initialData?.description || "");
@@ -215,6 +220,7 @@ interface ShortcutWindowProps {
 }
 
 function ShortcutWindow({ shortcut, open, onOpenChange }: ShortcutWindowProps) {
+  const icon = renderIcon(shortcut.icon, "w-8 h-8");
   const placeholders: Record<ShortcutType, string> = {
     system: `Este acceso abrirá ${shortcut.name} cuando el navegador del sistema esté implementado.`,
     area: `Este acceso abrirá el área ${shortcut.name} cuando el Explorador esté implementado.`,
@@ -235,11 +241,7 @@ function ShortcutWindow({ shortcut, open, onOpenChange }: ShortcutWindowProps) {
         </DialogHeader>
         <div className="space-y-4">
           <div className="flex items-center gap-3 p-4 bg-slate-100 rounded-lg">
-            {getIcon(shortcut.icon) &&
-              (() => {
-                const Icon = getIcon(shortcut.icon);
-                return <Icon className="w-8 h-8" style={{ color: shortcut.color }} />;
-              })()}
+            <span style={{ color: shortcut.color }}>{icon}</span>
             <div>
               <p className="text-sm font-medium text-slate-600">Tipo</p>
               <p className="text-sm text-slate-900 capitalize">{shortcut.type}</p>

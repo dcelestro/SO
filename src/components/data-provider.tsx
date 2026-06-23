@@ -11,16 +11,7 @@ const DataContext = createContext<Ctx | null>(null);
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<Data>(initialData);
   useEffect(() => {
-    const resources = [
-      "areas",
-      "projects",
-      "tasks",
-      "assets",
-      "ideas",
-      "due-items",
-      "reviews",
-      "weekly-focus/current",
-    ];
+    const resources = ["areas", "projects", "tasks", "weekly-focus/current"];
     Promise.all(
       resources.map((r) =>
         fetch(`/api/${r}`).then((x) => {
@@ -29,15 +20,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }),
       ),
     )
-      .then(([areas, projects, tasks, assets, ideas, dues, reviews, focus]) =>
+      .then(([areas, projects, tasks, focus]) =>
         setData({
           areas,
           projects,
           tasks,
-          assets,
-          ideas,
-          dues,
-          reviews,
+          assets: [],
+          ideas: [],
+          dues: [],
+          reviews: [],
           focus: {
             mainProjectId: focus?.mainProjectId || "",
             secondaryProjectIds:
