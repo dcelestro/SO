@@ -36,6 +36,16 @@ npm run dev
 
 Abrir `http://localhost:3000`.
 
+### Configuración local mínima
+
+`.env.example` contiene únicamente las variables que el proyecto lee hoy para ejecución local:
+
+- `DATABASE_URL` — obligatoria para Prisma y para los Route Handlers que acceden a PostgreSQL. El valor de ejemplo coincide con `docker-compose.yml`.
+- `AUTH_ENABLED` — opcional para desarrollo local. Con `false`, el acceso queda abierto para validar sin login; con `true`, se exige sesión.
+- `AUTH_SECRET` — opcional mientras `AUTH_ENABLED=false`; debe reemplazarse por un valor seguro antes de habilitar auth en un entorno compartido o productivo.
+
+Este archivo no contiene secretos reales y no corrige errores de dominio, seed, Prisma, API o frontend no relacionados con configuración.
+
 Credenciales del seed:
 
 ```text
