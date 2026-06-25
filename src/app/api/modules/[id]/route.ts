@@ -1,0 +1,9 @@
+import { NextResponse } from "next/server";
+import { requireApiSession } from "@/lib/api-auth";
+import { apiError, prismaFailure, validateModuleHierarchy, validationError } from "@/lib/explorer-api";
+import { moduleSchema, moduleUpdateSchema } from "@/lib/explorer-validation";
+import { getPrisma } from "@/lib/prisma";
+type Context = { params: Promise<{ id: string }> };
+export async function GET(_: Request, { params }: Context) { const auth = await requireApiSession(); if (auth) return auth; const { id } = await params; const item = await getPrisma().projectModule.findUnique({ where: { id }, include: { area: true, project: true } }); return item ? NextResponse.json(item) : apiError("El módulo no existe.", 404); }
+export async function PATCH(request: Request, { params }: Context) { const auth = await requireApiSession(); if (auth) return auth; const partial = moduleUpdateSchema.safeParse(await request.json()); if (!partial.success) return validationError(partial.error); try { const { id } = await params; const current = await getPrisma().projectModule.findUniqueOrThrow({ where: { id } }); const parsed = moduleSchema.safeParse({ ...current, ...partial.data }); if (!parsed.success) return validationError(parsed.error); const linkError = await validateModuleHierarchy(parsed.data); if (linkError) return linkError; return NextResponse.json(await getPrisma().projectModule.update({ where: { id }, data: partial.data })); } catch (error) { return prismaFailure(error); } }
+export async function DELETE(_: Request, { params }: Context) { const auth = await requireApiSession(); if (auth) return auth; try { const { id } = await params; return NextResponse.json(await getPrisma().projectModule.update({ where: { id }, data: { status: "discarded" } })); } catch (error) { return prismaFailure(error); } }

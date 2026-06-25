@@ -613,6 +613,10 @@ model Resource {
   notes       String?
   renewalDate DateTime?
   status      ResourceStatus @default(active)
+  credentialProvider     String?
+  credentialReference    String?
+  credentialLabel        String?
+  credentialUsernameHint String?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
