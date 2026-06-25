@@ -1,0 +1,14 @@
+import { NextResponse } from "next/server";
+import { requireApiSession } from "@/lib/api-auth";
+import { apiError, prismaFailure, validationError } from "@/lib/explorer-api";
+import { getPrisma } from "@/lib/prisma";
+import { taskDates, validateTaskLinks } from "@/lib/task-api";
+import { taskSchema, taskUpdateSchema } from "@/lib/task-validation";
+type Context = { params: Promise<{ id: string }> };
+const include = { area: { select: { id: true, name: true } }, project: { select: { id: true, name: true } }, module: { select: { id: true, name: true } } } as const;
+export async function GET(_: Request, { params }: Context) { const auth = await requireApiSession(); if (auth) return auth; const { id } = await params; const task = await getPrisma().task.findUnique({ where: { id }, include }); return task ? NextResponse.json(task) : apiError("La tarea no existe.", 404); }
+export async function PATCH(request: Request, { params }: Context) {
+  const auth = await requireApiSession(); if (auth) return auth; const partial = taskUpdateSchema.safeParse(await request.json()); if (!partial.success) return validationError(partial.error);
+  try { const { id } = await params; const current = await getPrisma().task.findUniqueOrThrow({ where: { id } }); const merged = taskSchema.safeParse({ ...current, dueDate: current.dueDate?.toISOString().slice(0, 10) ?? null, startDate: current.startDate?.toISOString().slice(0, 10) ?? null, ...partial.data }); if (!merged.success) return validationError(merged.error); const linkError = await validateTaskLinks(merged.data); if (linkError) return linkError; const completedAt = merged.data.status === "completed" ? current.completedAt ?? new Date() : null; const action = merged.data.status === "completed" && current.status !== "completed" ? "task.completed" : "task.updated"; const task = await getPrisma().task.update({ where: { id }, data: { ...taskDates(partial.data), completedAt }, include }); await getPrisma().activityLog.create({ data: { areaId: task.areaId, projectId: task.projectId, moduleId: task.moduleId, entityType: "Task", entityId: task.id, action, description: task.title } }); return NextResponse.json(task); } catch (error) { return prismaFailure(error); }
+}
+export async function DELETE(_: Request, { params }: Context) { const auth = await requireApiSession(); if (auth) return auth; try { const { id } = await params; const task = await getPrisma().task.update({ where: { id }, data: { status: "discarded", completedAt: null }, include }); await getPrisma().activityLog.create({ data: { areaId: task.areaId, projectId: task.projectId, moduleId: task.moduleId, entityType: "Task", entityId: task.id, action: "task.discarded", description: task.title } }); return NextResponse.json(task); } catch (error) { return prismaFailure(error); } }
