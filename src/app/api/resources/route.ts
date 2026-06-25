@@ -9,9 +9,9 @@ const include = { area: { select: { id: true, name: true } }, project: { select:
 const types = ["domain", "hosting", "database", "repository", "api", "design_file", "provider", "tool", "account", "cloud_service", "payment_gateway", "analytics", "backup", "server", "other"];
 const statuses = ["active", "inactive", "pending", "expired", "cancelled"];
 export async function GET(request: NextRequest) {
-  const auth = await requireApiSession(); if (auth) return auth; const query = request.nextUrl.searchParams; const type = query.get("type"); const status = query.get("status");
+  const auth = await requireApiSession(); if (auth) return auth; const query = request.nextUrl.searchParams; const type = query.get("type"); const status = query.get("status"); const direct = query.get("direct") === "true"; const projectId = query.get("projectId"); const moduleId = query.get("moduleId");
   if (type && !types.includes(type)) return apiError("El tipo de recurso no es válido."); if (status && !statuses.includes(status)) return apiError("El estado de recurso no es válido.");
-  return NextResponse.json(await getPrisma().resource.findMany({ where: { areaId: query.get("areaId") ?? undefined, projectId: query.get("projectId") ?? undefined, moduleId: query.get("moduleId") ?? undefined, type: type ? type as never : undefined, status: status ? status as never : { not: "cancelled" } }, include, orderBy: [{ status: "asc" }, { name: "asc" }] }));
+  return NextResponse.json(await getPrisma().resource.findMany({ where: { areaId: query.get("areaId") ?? undefined, projectId: projectId ?? (direct ? null : undefined), moduleId: moduleId ?? (direct ? null : undefined), type: type ? type as never : undefined, status: status ? status as never : { not: "cancelled" } }, include, orderBy: [{ status: "asc" }, { name: "asc" }] }));
 }
 export async function POST(request: Request) {
   const auth = await requireApiSession(); if (auth) return auth; const body = await request.json(); const secretError = secretFieldError(body); if (secretError) return apiError(secretError);
