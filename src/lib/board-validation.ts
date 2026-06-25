@@ -1,5 +1,5 @@
 import { z } from "zod";
-const nodeSchema = z.object({ id: z.string().min(1), type: z.enum(["box", "text"]), x: z.number().finite(), y: z.number().finite(), width: z.number().min(80).max(800), height: z.number().min(40).max(600), text: z.string().max(2000), color: z.string().regex(/^#[0-9a-fA-F]{6}$/), shape: z.literal("rectangle") });
+const nodeSchema = z.object({ id: z.string().min(1), type: z.enum(["box", "shape", "text"]), x: z.number().finite(), y: z.number().finite(), width: z.number().min(40).max(800), height: z.number().min(32).max(600), text: z.string().max(2000), color: z.string().regex(/^#[0-9a-fA-F]{6}$/), shape: z.enum(["rectangle", "rounded_rectangle", "ellipse", "diamond", "sticky"]) });
 const edgeSchema = z.object({ id: z.string().min(1), fromNodeId: z.string().min(1), toNodeId: z.string().min(1), label: z.string().max(300).optional(), type: z.enum(["arrow", "line"]) });
 export const boardDataSchema = z.object({ nodes: z.array(nodeSchema).max(300), edges: z.array(edgeSchema).max(600), viewport: z.object({ x: z.number(), y: z.number(), zoom: z.number().min(.25).max(4) }) });
 const optionalText = z.string().trim().nullish().transform(value => value || null);
