@@ -18,6 +18,6 @@ const sections = new Set([
 export default async function Page({ params }: { params: Promise<{ section: string; id?: string[] }> }) {
   const { section, id } = await params;
   if (!sections.has(section)) notFound();
-  return <Workspace section={section} id={id} />;
+  return <Workspace section={section} id={id?.[0]} />;
 }
 

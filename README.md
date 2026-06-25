@@ -46,6 +46,12 @@ Abrir `http://localhost:3000`.
 
 Este archivo no contiene secretos reales y no corrige errores de dominio, seed, Prisma, API o frontend no relacionados con configuración.
 
+### Fuente de datos durante validación
+
+Por defecto Nexo intenta consumir backend real desde `/api`. Si el backend falla, la pantalla muestra el estado `Backend con error` y no reemplaza silenciosamente la respuesta por datos demo/localStorage.
+
+El modo demo sigue disponible agregando `?data=demo` a la URL. En ese modo la pantalla muestra `Demo` o `Demo/localStorage` y debe considerarse explícitamente como una validación sin backend real.
+
 Credenciales del seed:
 
 ```text

@@ -321,14 +321,18 @@ async function main() {
       mainProjectId: projects[0].id,
       weeklyGoal: "Cerrar el alcance funcional y dejar el MVP listo para validar.",
       notes: "Proteger dos bloques de trabajo profundo.",
-      secondaryScopes: [
-        { projectId: projects[8].id, label: "Productos capilares" },
-        { projectId: projects[9].id, label: "Newsletter peluquería" },
-      ],
-      avoidScopes: [
-        { projectId: projects[5].id, label: "App de inversiones" },
-        { projectId: projects[3].id, label: "Ticketera Abundia" },
-      ],
+      secondaryProjects: {
+        create: [
+          { projectId: projects[8].id },
+          { projectId: projects[9].id },
+        ],
+      },
+      avoidProjects: {
+        create: [
+          { projectId: projects[5].id },
+          { projectId: projects[3].id },
+        ],
+      },
     },
   });
 
