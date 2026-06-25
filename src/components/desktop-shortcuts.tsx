@@ -31,6 +31,15 @@ function getIcon(name?: string) {
   return iconMap[name];
 }
 
+function renderIcon(
+  name: string | undefined,
+  className: string,
+  style?: React.CSSProperties,
+) {
+  const Icon = getIcon(name);
+  return <Icon className={className} style={style} />;
+}
+
 interface DesktopShortcutItemProps {
   shortcut: DesktopShortcut;
   onOpen: (shortcut: DesktopShortcut) => void;
@@ -39,7 +48,6 @@ interface DesktopShortcutItemProps {
 }
 
 function DesktopShortcutItem({ shortcut, onOpen, onEdit, onDelete }: DesktopShortcutItemProps) {
-  const IconComponent = getIcon(shortcut.icon);
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -50,7 +58,7 @@ function DesktopShortcutItem({ shortcut, onOpen, onEdit, onDelete }: DesktopShor
         className="w-14 h-14 rounded-lg flex items-center justify-center transition-all group-hover:scale-110"
         style={{ backgroundColor: shortcut.color || "#64748b" }}
       >
-        <IconComponent className="w-7 h-7 text-white" />
+        {renderIcon(shortcut.icon, "w-7 h-7 text-white")}
       </button>
 
       {/* Name */}
@@ -235,11 +243,7 @@ function ShortcutWindow({ shortcut, open, onOpenChange }: ShortcutWindowProps) {
         </DialogHeader>
         <div className="space-y-4">
           <div className="flex items-center gap-3 p-4 bg-slate-100 rounded-lg">
-            {getIcon(shortcut.icon) &&
-              (() => {
-                const Icon = getIcon(shortcut.icon);
-                return <Icon className="w-8 h-8" style={{ color: shortcut.color }} />;
-              })()}
+            {renderIcon(shortcut.icon, "w-8 h-8", { color: shortcut.color })}
             <div>
               <p className="text-sm font-medium text-slate-600">Tipo</p>
               <p className="text-sm text-slate-900 capitalize">{shortcut.type}</p>

@@ -38,7 +38,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { QuickCreate } from "@/components/quick-create";
-import { DataProvider } from "@/components/data-provider";
+import { DataProvider, useData } from "@/components/data-provider";
 type NavItem = [string, string, LucideIcon];
 type NavGroup = { label: string; items: NavItem[] };
 const groups: NavGroup[] = [
@@ -112,6 +112,17 @@ function Nav({ close }: { close?: () => void }) {
 }
 function Shell({ children }: { children: React.ReactNode }) {
   const [create, setCreate] = useState(false);
+  const { dataSource, dataError } = useData();
+  const sourceLabel =
+    dataSource === "backend"
+      ? "Backend real"
+      : dataSource === "local-storage"
+        ? "Demo/localStorage"
+        : dataSource === "demo"
+          ? "Demo"
+          : dataSource === "error"
+            ? "Backend con error"
+            : "Validando backend";
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-[#f7f8fa] text-slate-950">
@@ -158,6 +169,21 @@ function Shell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </header>
+          <div
+            className={`border-b px-4 py-2 text-xs md:px-7 ${
+              dataSource === "error"
+                ? "border-red-200 bg-red-50 text-red-700"
+                : dataSource === "backend"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : "border-amber-200 bg-amber-50 text-amber-700"
+            }`}
+          >
+            Fuente de datos: {sourceLabel}
+            {dataError ? ` — ${dataError}` : ""}
+            {dataSource === "demo" || dataSource === "local-storage"
+              ? " — no valida backend real"
+              : ""}
+          </div>
           <main className="mx-auto max-w-[1500px] p-4 md:p-7">{children}</main>
         </div>
         <QuickCreate open={create} onOpenChange={setCreate} />
