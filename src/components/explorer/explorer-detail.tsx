@@ -3,6 +3,7 @@ import { Archive, Box, FolderKanban, Pencil, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { BoardSection } from "@/components/boards/board-section";
 import { TaskSection } from "@/components/tasks/task-section";
 import { ResourceSection } from "@/components/resources/resource-section";
 import type { ExplorerArea, ExplorerModule, ExplorerProject, ExplorerSelection } from "@/lib/explorer-types";
@@ -14,6 +15,7 @@ export function ExplorerDetail({ area, project, module: selectedModule, onSelect
     {(project || selectedModule) && <div className="grid gap-x-8 gap-y-5 border-b border-slate-200 py-6 sm:grid-cols-2"><Info label="Área" value={area?.name} />{selectedModule && <Info label="Proyecto" value={project?.name} />}<Info label="Prioridad" value={(selectedModule ?? project)?.priority} /><Info label="Próxima acción" value={(selectedModule ?? project)?.nextAction || "Sin definir"} />{(selectedModule ?? project)?.blockedReason && <Info label="Motivo de bloqueo" value={(selectedModule ?? project)?.blockedReason} />}<div><p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Progreso · {(selectedModule ?? project)?.progressPercentage}%</p><Progress value={(selectedModule ?? project)?.progressPercentage} /></div></div>}
     {area && <TaskSection key={`${area.id}-${project?.id ?? "area"}-${selectedModule?.id ?? "level"}`} areaId={area.id} projectId={project?.id} moduleId={selectedModule?.id} />}
     {area && <ResourceSection key={`resources-${area.id}-${project?.id ?? "area"}-${selectedModule?.id ?? "level"}`} areaId={area.id} projectId={project?.id} moduleId={selectedModule?.id} />}
+    {area && <BoardSection key={`boards-${area.id}-${project?.id ?? "area"}-${selectedModule?.id ?? "level"}`} areaId={area.id} projectId={project?.id} moduleId={selectedModule?.id} />}
     {area && !project && <ChildList title={`Proyectos (${area.projects.length})`} items={area.projects} empty="Todavía no hay proyectos en esta área." icon={<FolderKanban className="size-4" />} onClick={(id) => onSelect({ type: "project", id })} />}
     {project && !selectedModule && <ChildList title={`Módulos (${project.modules.length})`} items={project.modules} empty="Este proyecto todavía no tiene módulos." icon={<Box className="size-4" />} onClick={(id) => onSelect({ type: "module", id })} />}
     {selectedModule && <div className="py-6"><h2 className="mb-3 text-sm font-semibold">Secciones del módulo</h2><div className="divide-y divide-slate-200 rounded-lg border border-slate-200">{placeholders.map((item) => <div key={item} className="flex items-center justify-between gap-4 px-4 py-3"><span className="text-sm font-medium">{item}</span><span className="text-xs text-slate-400">{item === "Credenciales" ? "La seguridad sensible será gestionada por La Caja en una próxima integración." : "Se implementará en una próxima iteración."}</span></div>)}</div></div>}
