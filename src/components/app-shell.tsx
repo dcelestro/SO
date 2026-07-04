@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
@@ -112,8 +112,8 @@ const groups: NavGroup[] = [
     label: "Extras",
     items: [
       { href: "/tasks?tab=inbox", label: "Inbox", Icon: Inbox },
-      { href: "/dashboard", label: "Alertas", Icon: Bell },
-      { href: "/dashboard", label: "Archivo", Icon: Archive },
+      { href: "/alerts", label: "Alertas", Icon: Bell },
+      { href: "/archive", label: "Archivo", Icon: Archive },
       { href: "/settings", label: "Configuración", Icon: Settings },
     ],
   },
