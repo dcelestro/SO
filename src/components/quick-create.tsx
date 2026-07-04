@@ -53,7 +53,7 @@ export function QuickCreate({
   onOpenChange: (v: boolean) => void;
 }) {
   const router = useRouter();
-  const { data } = useData();
+  const { data, setData } = useData();
   const [kind, setKind] = useState("task");
   const [error, setError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -117,7 +117,7 @@ export function QuickCreate({
           dueDate: date,
         });
       } else if (kind === "idea") {
-        await createIdeaMut.mutateAsync({
+        const createdIdea = await createIdeaMut.mutateAsync({
           title,
           description,
           areaId,
@@ -125,8 +125,12 @@ export function QuickCreate({
           status: "inbox",
           reviewDate: date,
         });
+        setData((prev) => ({
+          ...prev,
+          ideas: [createdIdea as any, ...((prev as any).ideas || [])],
+        }));
       } else if (kind === "asset") {
-        await createAssetMut.mutateAsync({
+        const createdAsset = await createAssetMut.mutateAsync({
           name: title,
           projectId,
           type: String(fd.get("type") || "other"),
@@ -134,16 +138,24 @@ export function QuickCreate({
           renewalDate: date,
           status: "active",
         });
+        setData((prev) => ({
+          ...prev,
+          assets: [createdAsset as any, ...((prev as any).assets || [])],
+        }));
       } else if (kind === "due") {
-        await createDueItemMut.mutateAsync({
+        const createdDue = await createDueItemMut.mutateAsync({
           title,
           projectId,
           type: String(fd.get("type") || "other"),
           dueDate: date || new Date().toISOString(),
           status: "pending",
         });
+        setData((prev) => ({
+          ...prev,
+          dues: [createdDue as any, ...((prev as any).dues || [])],
+        }));
       } else {
-        await createReviewMut.mutateAsync({
+        const createdReview = await createReviewMut.mutateAsync({
           title,
           projectId,
           type: "project_review",
@@ -151,6 +163,10 @@ export function QuickCreate({
           nextReviewDate: date || new Date().toISOString(),
           status: "pending",
         });
+        setData((prev) => ({
+          ...prev,
+          reviews: [createdReview as any, ...((prev as any).reviews || [])],
+        }));
       }
 
       router.refresh();
