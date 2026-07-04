@@ -37,6 +37,3 @@ CREATE TABLE "LibraryItem" (
 
   CONSTRAINT "LibraryItem_pkey" PRIMARY KEY ("id")
 );
-
-CREATE INDEX "LibraryItem_status_updatedAt_idx" ON "LibraryItem"("status", "updatedAt");
-CREATE INDEX "LibraryItem_type_category_idx" ON "LibraryItem"("type", "category");
