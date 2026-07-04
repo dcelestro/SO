@@ -1,6 +1,6 @@
 ﻿// @ts-nocheck
 "use client";
-/* eslint-disable react-hooks/purity -- fechas relativas calculadas contra el inicio de la sesiÃ³n */
+/* eslint-disable react-hooks/purity -- fechas relativas calculadas contra el inicio de la sesión */
 import Link from "next/link";
 import { useState } from "react";
 import { useData } from "@/components/data-provider";
@@ -86,7 +86,7 @@ export const labels: Record<string, string> = {
   frozen: "Congelado",
   idea: "Idea",
   discarded: "Descartado",
-  critical: "CrÃ­tica",
+  critical: "Crítica",
   high: "Alta",
   medium: "Media",
   low: "Baja",
@@ -102,9 +102,9 @@ export const labels: Record<string, string> = {
   converted_to_project: "Convertida",
   development: "Desarrollo",
   testing: "Pruebas",
-  production: "ProducciÃ³n",
-  validation: "ValidaciÃ³n",
-  design: "DiseÃ±o",
+  production: "Producción",
+  validation: "Validación",
+  design: "Diseño",
   maintenance: "Mantenimiento",
   domain: "Dominio",
   hosting: "Hosting",
@@ -120,7 +120,7 @@ export const fmt = (v?: string | Date | null | undefined) =>
         day: "2-digit",
         month: "short",
       }).format(new Date(v))
-    : "â€”";
+    : "-";
 export const days = (v: string | Date | null | undefined) => { if (!v) return 0; return Math.ceil((new Date(v).getTime() - TODAY) / 86400000); };
 export function Status({ value }: { value: string }) {
   return (
@@ -267,12 +267,12 @@ function DashboardV2() {
   return (
     <>
       <Header
-        title="Buenos dÃ­as, Dario"
-        desc="Tu centro de control priorizÃ³ lo que merece atenciÃ³n ahora."
+        title="Buenos días, Dario"
+        desc="Tu centro de control priorizó lo que merece atención ahora."
       />
       <HeroCard
         eyebrow="Foco principal de la semana"
-        title={focus?.name || "DefinÃ­ tu foco principal"}
+        title={focus?.name || "Definí tu foco principal"}
         description={data.focus.weeklyGoal}
         icon={Target}
       >
@@ -304,7 +304,7 @@ function DashboardV2() {
       <section className="mt-6 space-y-3">
         <SectionHeader
           eyebrow="Prioridad operativa"
-          title="QuÃ© deberÃ­as hacer ahora"
+          title="Qué deberías hacer ahora"
           description="Ordenado por foco, urgencia, prioridad y bloqueos."
           action={
             <Button asChild variant="ghost" size="sm">
@@ -324,7 +324,7 @@ function DashboardV2() {
                 task.projectId === data.focus.mainProjectId && "Foco principal",
                 task.dueDate && days(task.dueDate) < 0 && "Vencida",
                 task.dueDate && days(task.dueDate) === 0 && "Vence hoy",
-                task.priority === "critical" && "Prioridad crÃ­tica",
+                task.priority === "critical" && "Prioridad crítica",
                 task.priority === "high" && "Alta prioridad",
                 task.status === "blocked" && "Bloqueante",
               ].filter(Boolean) as string[];
@@ -339,9 +339,9 @@ function DashboardV2() {
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-slate-950">{task.title}</p>
                     <p className="mt-0.5 text-xs text-slate-600">
-                      {project?.name || "Inbox"} Â·{" "}
+                      {project?.name || "Inbox"} ·{" "}
                       {reasons.length
-                        ? `Aparece porque: ${reasons.join(" Â· ")}`
+                        ? `Aparece porque: ${reasons.join(" · ")}`
                         : "Pendiente de procesar"}
                     </p>
                   </div>
@@ -371,8 +371,8 @@ function DashboardV2() {
       <section className="mt-7 space-y-3">
         <SectionHeader
           eyebrow="Riesgos y pendientes"
-          title="AtenciÃ³n requerida"
-          description="Estas seÃ±ales necesitan una decisiÃ³n, no solo una lectura."
+          title="Atención requerida"
+          description="Estas señales necesitan una decisión, no solo una lectura."
         />
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <AttentionCard
@@ -381,7 +381,7 @@ function DashboardV2() {
             title="Tareas vencidas"
             description={
               overdue.length
-                ? `${overdue.length} requieren acciÃ³n inmediata`
+                ? `${overdue.length} requieren acción inmediata`
                 : "No hay tareas vencidas"
             }
           >
@@ -392,18 +392,18 @@ function DashboardV2() {
           <AttentionCard
             tone="warning"
             icon={AlertTriangle}
-            title="Sin prÃ³xima acciÃ³n"
+            title="Sin próxima acción"
             description={
               noAction.length
                 ? `${noAction.length} proyectos sin rumbo operativo`
-                : "Todos tienen una acciÃ³n concreta"
+                : "Todos tienen una acción concreta"
             }
           >
             <Link
               href="/projects"
               className="text-sm font-semibold text-orange-700"
             >
-              Tomar decisiÃ³n â†’
+              Tomar decisión â†’
             </Link>
           </AttentionCard>
           <AttentionCard
@@ -442,8 +442,8 @@ function DashboardV2() {
 
       <section className="mt-7 grid gap-4 xl:grid-cols-[1.4fr_1fr]">
         <OperationalCard
-          title="PrÃ³ximos vencimientos"
-          description="Lo mÃ¡s cercano primero; el color expresa el nivel de riesgo."
+          title="Próximos vencimientos"
+          description="Lo más cercano primero; el color expresa el nivel de riesgo."
         >
           <div className="space-y-2">
             {dueSoon
@@ -477,7 +477,7 @@ function DashboardV2() {
         </OperationalCard>
         <OperationalCard
           title="Contexto del sistema"
-          description="SeÃ±ales de volumen, sin competir con la acciÃ³n."
+          description="Señales de volumen, sin competir con la acción."
         >
           <div className="grid grid-cols-2 gap-3">
             <ContextCard
@@ -507,7 +507,7 @@ function DashboardV2() {
   );
 }
 
-/** Referencia visual anterior conservada durante esta iteraciÃ³n incremental. */
+/** Referencia visual anterior conservada durante esta iteración incremental. */
 export function DashboardLegacy() {
   const { data } = useData(),
     now = Date.now(),
@@ -531,8 +531,8 @@ export function DashboardLegacy() {
   return (
     <>
       <Header
-        title="Buenos dÃ­as, Dario"
-        desc="Esto es lo que merece tu atenciÃ³n hoy."
+        title="Buenos días, Dario"
+        desc="Esto es lo que merece tu atención hoy."
       />
       <div className="grid gap-4 xl:grid-cols-3">
         <Card className="border-slate-900 bg-slate-950 text-white xl:col-span-2">
@@ -560,7 +560,7 @@ export function DashboardLegacy() {
               Focos secundarios:{" "}
               {data.focus.secondaryProjectIds
                 .map((i) => data.projects.find((p) => p.id === i)?.name)
-                .join(" Â· ")}
+                .join(" · ")}
             </span>
           </CardContent>
         </Card>
@@ -581,7 +581,7 @@ export function DashboardLegacy() {
         <Card className="xl:col-span-2">
           <CardHeader className="flex-row items-center justify-between">
             <div>
-              <CardTitle className="text-base">Tareas crÃ­ticas</CardTitle>
+              <CardTitle className="text-base">Tareas críticas</CardTitle>
               <CardDescription>
                 Vencidas, de hoy o de alta prioridad.
               </CardDescription>
@@ -600,7 +600,7 @@ export function DashboardLegacy() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Indicadores rÃ¡pidos</CardTitle>
+            <CardTitle className="text-base">Indicadores rápidos</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-3">
             <Metric
@@ -635,10 +635,10 @@ export function DashboardLegacy() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">
-              Proyectos que requieren atenciÃ³n
+              Proyectos que requieren atención
             </CardTitle>
             <CardDescription>
-              Riesgo, bloqueo o ausencia de una acciÃ³n clara.
+              Riesgo, bloqueo o ausencia de una acción clara.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -656,7 +656,7 @@ export function DashboardLegacy() {
                   <p className="truncate text-xs text-slate-500">
                     {p.status === "blocked"
                       ? "Proyecto bloqueado"
-                      : p.nextAction || "Prioridad crÃ­tica"}
+                      : p.nextAction || "Prioridad crítica"}
                   </p>
                 </div>
                 <Status value={p.status} />
@@ -666,8 +666,8 @@ export function DashboardLegacy() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Vencimientos prÃ³ximos</CardTitle>
-            <CardDescription>Ventana de los prÃ³ximos 30 dÃ­as.</CardDescription>
+            <CardTitle className="text-base">Vencimientos próximos</CardTitle>
+            <CardDescription>Ventana de los próximos 30 días.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             {upcoming.map((d) => (
@@ -727,15 +727,15 @@ export function TaskLine({ task }: { task: Task }) {
     task.dueDate && days(task.dueDate) < 0 && task.status !== "completed",
   );
   const reason = isOverdue
-    ? "Vencida: necesita resoluciÃ³n o una nueva fecha"
+    ? "Vencida: necesita resolución o una nueva fecha"
     : isMainFocus
       ? "Pertenece al foco principal de esta semana"
       : task.status === "blocked"
-        ? "EstÃ¡ bloqueando el avance del proyecto"
+        ? "Está bloqueando el avance del proyecto"
         : isAvoided
-          ? "Advertencia: este proyecto estÃ¡ marcado como no tocar"
+          ? "Advertencia: este proyecto está marcado como no tocar"
           : task.priority === "critical"
-            ? "Prioridad crÃ­tica"
+            ? "Prioridad crítica"
             : task.status === "inbox"
               ? "Captura pendiente de procesar"
               : "Trabajo operativo pendiente";
@@ -783,7 +783,7 @@ export function TaskLine({ task }: { task: Task }) {
           {isOverdue && <SemanticBadge value="overdue" label="Vencida" />}
         </div>
         <p className="mt-1 truncate text-xs text-slate-500">
-          {project?.name || "Inbox"} Â· {reason}
+          {project?.name || "Inbox"} · {reason}
         </p>
       </div>
       <div className="flex items-center gap-2">
@@ -829,7 +829,7 @@ function Projects() {
     <>
       <Header
         title="Proyectos"
-        desc="Todos tus frentes, con estado y prÃ³xima acciÃ³n visibles."
+        desc="Todos tus frentes, con estado y próxima acción visibles."
       />
       <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border bg-white p-3">
         <div className="relative min-w-60 flex-1">
@@ -883,10 +883,10 @@ function Projects() {
             <TableHeader>
               <TableRow>
                 <TableHead>Proyecto</TableHead>
-                <TableHead>Ãrea</TableHead>
+                <TableHead>Área</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Prioridad</TableHead>
-                <TableHead className="min-w-64">PrÃ³xima acciÃ³n</TableHead>
+                <TableHead className="min-w-64">Próxima acción</TableHead>
                 <TableHead>Progreso</TableHead>
               </TableRow>
             </TableHeader>
@@ -957,12 +957,12 @@ function Projects() {
                     </TableCell>
                     <TableCell>
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                        PrÃ³xima acciÃ³n
+                        Próxima acción
                       </p>
                       <p
                         className={`mt-1 font-medium ${p.status === "active" && !p.nextAction ? "text-orange-700" : "text-slate-800"}`}
                       >
-                        {p.nextAction || "Definir una prÃ³xima acciÃ³n concreta"}
+                        {p.nextAction || "Definir una próxima acción concreta"}
                       </p>
                     </TableCell>
                     <TableCell>
@@ -1023,12 +1023,12 @@ function ProjectCard({ project: p }: { project: Project }) {
             className={`mb-4 min-h-16 rounded-lg p-3 ${needsAction ? "bg-orange-100/70" : "bg-slate-50"}`}
           >
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              PrÃ³xima acciÃ³n
+              Próxima acción
             </p>
             <p
               className={`mt-1 text-sm font-semibold ${needsAction ? "text-orange-800" : "text-slate-900"}`}
             >
-              {p.nextAction || "Definir una prÃ³xima acciÃ³n concreta"}
+              {p.nextAction || "Definir una próxima acción concreta"}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -1057,7 +1057,7 @@ function Tasks() {
     <>
       <Header
         title="Tareas"
-        desc="Una lista liviana para ejecutar, no para administrar la administraciÃ³n."
+        desc="Una lista liviana para ejecutar, no para administrar la administración."
       />
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
@@ -1150,11 +1150,11 @@ function Focus() {
     <>
       <Header
         title="Foco semanal"
-        desc="Decidir quÃ© no hacer tambiÃ©n es una decisiÃ³n de producto."
+        desc="Decidir qué no hacer también es una decisión de producto."
       />
       <HeroCard
         eyebrow="Foco principal"
-        title={main?.name || "DefinÃ­ tu foco"}
+        title={main?.name || "Definí tu foco"}
         description={data.focus.weeklyGoal}
         icon={Target}
       >
@@ -1251,7 +1251,7 @@ function Ecosystem() {
     <>
       <Header
         title="Mapa del ecosistema"
-        desc="Ãreas y proyectos como un sistema, no como una lista infinita."
+        desc="Áreas y proyectos como un sistema, no como una lista infinita."
         action={
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger className="w-44 bg-white">
@@ -1324,7 +1324,7 @@ function Freezer() {
     <>
       <Header
         title="Congelador"
-        desc="Proyectos pausados conscientemente para recuperar atenciÃ³n."
+        desc="Proyectos pausados conscientemente para recuperar atención."
       />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {items.map((p) => (
@@ -1354,7 +1354,7 @@ function Freezer() {
                 </p>
                 <div className="mt-3 flex items-center justify-between border-t pt-3">
                   <span className="text-xs text-slate-500">
-                    Fecha de revisiÃ³n
+                    Fecha de revisión
                   </span>
                   <SemanticBadge value="frozen" label={fmt(p.frozenUntil)} />
                 </div>
@@ -1368,10 +1368,10 @@ function Freezer() {
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Â¿Reactivar {p.name}?</AlertDialogTitle>
+                    <AlertDialogTitle>¿Reactivar {p.name}?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Se reactivarÃ¡ como pausado para que puedas definir una
-                      prÃ³xima acciÃ³n antes de marcarlo activo.
+                      Se reactivará como pausado para que puedas definir una
+                      próxima acción antes de marcarlo activo.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -1411,7 +1411,7 @@ function Assets() {
     <>
       <Header
         title="Activos digitales"
-        desc="DÃ³nde estÃ¡ cada recurso importante, sin guardar contraseÃ±as."
+        desc="Dónde está cada recurso importante, sin guardar contraseñas."
       />
       <Card>
         <Table>
@@ -1422,7 +1422,7 @@ function Assets() {
               <TableHead>Tipo</TableHead>
               <TableHead>Proveedor</TableHead>
               <TableHead>Acceso</TableHead>
-              <TableHead>RenovaciÃ³n</TableHead>
+              <TableHead>Renovación</TableHead>
               <TableHead>Estado</TableHead>
             </TableRow>
           </TableHeader>
@@ -1437,7 +1437,7 @@ function Assets() {
                 <TableCell>
                   <Status value={a.type} />
                 </TableCell>
-                <TableCell>{a.provider || "â€”"}</TableCell>
+                <TableCell>{a.provider || "-"}</TableCell>
                 <TableCell>
                   {a.url ? (
                     <a
@@ -1448,7 +1448,7 @@ function Assets() {
                       Abrir <ExternalLink className="size-3" />
                     </a>
                   ) : (
-                    a.passwordManagerReference || "â€”"
+                    a.passwordManagerReference || "-"
                   )}
                 </TableCell>
                 <TableCell>{fmt(a.renewalDate)}</TableCell>
@@ -1461,8 +1461,8 @@ function Assets() {
         </Table>
       </Card>
       <p className="mt-3 text-xs text-slate-500">
-        Seguridad: Nexo solo registra referencias al gestor de contraseÃ±as.
-        Nunca almacena la contraseÃ±a.
+        Seguridad: Nexo solo registra referencias al gestor de contraseñas.
+        Nunca almacena la contraseña.
       </p>
     </>
   );
@@ -1473,7 +1473,7 @@ function Ideas() {
     <>
       <Header
         title="Incubadora de ideas"
-        desc="Capturar no significa comprometerse. EvaluÃ¡ antes de abrir otro frente."
+        desc="Capturar no significa comprometerse. Evaluá antes de abrir otro frente."
       />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {data.ideas.map((i) => (
@@ -1498,7 +1498,7 @@ function Ideas() {
                 <span>
                   Potencial <b>{labels[i.potential]}</b>
                 </span>
-                <span>Â·</span>
+                <span>·</span>
                 <span>
                   Complejidad <b>{labels[i.complexity]}</b>
                 </span>
@@ -1558,19 +1558,19 @@ function Dues() {
         icon: "text-red-600",
       },
       {
-        t: "PrÃ³ximos 7 dÃ­as",
+        t: "Próximos 7 días",
         test: (n: number) => n >= 0 && n <= 7,
         style: "border-l-orange-500 bg-orange-50/70",
         icon: "text-orange-600",
       },
       {
-        t: "PrÃ³ximos 30 dÃ­as",
+        t: "Próximos 30 días",
         test: (n: number) => n > 7 && n <= 30,
         style: "border-l-amber-400 bg-amber-50/50",
         icon: "text-amber-600",
       },
       {
-        t: "MÃ¡s adelante",
+        t: "Más adelante",
         test: (n: number) => n > 30,
         style: "border-l-slate-300 bg-slate-50/60",
         icon: "text-slate-500",
@@ -1618,7 +1618,7 @@ function Dues() {
                       <p className="text-xs text-slate-500">
                         {data.projects.find((p) => p.id === d.projectId)
                           ?.name || "General"}{" "}
-                        Â· {labels[d.type] || d.type}
+                        · {labels[d.type] || d.type}
                       </p>
                     </div>
                     {d.amount && (
@@ -1683,7 +1683,7 @@ function Reviews() {
       ),
     },
     {
-      t: "PrÃ³ximas",
+      t: "Próximas",
       xs: data.reviews.filter(
         (r) => r.status === "pending" && days(r.nextReviewDate) > 7,
       ),
@@ -1693,8 +1693,8 @@ function Reviews() {
   return (
     <>
       <Header
-        title="Revisiones periÃ³dicas"
-        desc="Un sistema confiable tambiÃ©n revisa lo que parece estar funcionando."
+        title="Revisiones periódicas"
+        desc="Un sistema confiable también revisa lo que parece estar funcionando."
       />
       <div className="grid gap-4 lg:grid-cols-2">
         {groups.map((g) => (
@@ -1718,7 +1718,7 @@ function Reviews() {
                     <div className="flex-1">
                       <p className="text-sm font-medium">{r.title}</p>
                       <p className="text-xs text-slate-500">
-                        {labels[r.type] || r.type.replaceAll("_", " ")} Â·{" "}
+                        {labels[r.type] || r.type.replaceAll("_", " ")} ·{" "}
                         {fmt(r.nextReviewDate)}
                       </p>
                     </div>
@@ -1768,7 +1768,7 @@ function KpisV2() {
   const focusIds = [mainFocus, ...data.focus.secondaryProjectIds];
   const critical = [
     {
-      l: "Proyectos sin prÃ³xima acciÃ³n",
+      l: "Proyectos sin próxima acción",
       v: data.projects.filter((p) => p.status === "active" && !p.nextAction)
         .length,
     },
@@ -1824,13 +1824,13 @@ function KpisV2() {
     <>
       <Header
         title="Indicadores personales"
-        desc="Primero las seÃ±ales que exigen una decisiÃ³n; despuÃ©s el contexto."
+        desc="Primero las señales que exigen una decisión; después el contexto."
       />
       <section className="space-y-3">
         <SectionHeader
-          eyebrow="SeÃ±ales crÃ­ticas"
+          eyebrow="Señales críticas"
           title="Lo que puede frenar tu sistema"
-          description="Valores distintos de cero requieren atenciÃ³n."
+          description="Valores distintos de cero requieren atención."
         />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {critical.map((x) => (
@@ -1851,8 +1851,8 @@ function KpisV2() {
       </section>
       <section className="mt-7 space-y-3">
         <SectionHeader
-          eyebrow="SeÃ±ales de foco"
-          title="CÃ³mo estÃ¡ distribuida tu atenciÃ³n"
+          eyebrow="Señales de foco"
+          title="Cómo está distribuida tu atención"
         />
         <div className="grid gap-4 md:grid-cols-3">
           {focus.map((x) => (
@@ -1866,7 +1866,7 @@ function KpisV2() {
         <SectionHeader
           eyebrow="Contexto"
           title="Volumen general"
-          description="InformaciÃ³n Ãºtil, sin competir con lo urgente."
+          description="Información útil, sin competir con lo urgente."
         />
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {info.map((x) => (
@@ -1896,7 +1896,7 @@ export function KpisLegacy() {
       v: data.projects.filter((p) => p.status === "frozen").length,
     },
     {
-      l: "Sin prÃ³xima acciÃ³n",
+      l: "Sin próxima acción",
       v: data.projects.filter((p) => p.status === "active" && !p.nextAction)
         .length,
       bad: true,
@@ -1923,7 +1923,7 @@ export function KpisLegacy() {
       v: data.ideas.filter((i) => i.status !== "discarded").length,
     },
     {
-      l: "Vencimientos prÃ³ximos",
+      l: "Vencimientos próximos",
       v: data.dues.filter(
         (d) => d.status === "pending" && days(d.dueDate) <= 30,
       ).length,
@@ -1941,7 +1941,7 @@ export function KpisLegacy() {
     <>
       <Header
         title="Indicadores personales"
-        desc="SeÃ±ales simples para tomar decisiones, no analytics decorativo."
+        desc="Señales simples para tomar decisiones, no analytics decorativo."
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {values.map((x) => (
@@ -1960,7 +1960,7 @@ export function KpisLegacy() {
       <Card className="mt-4">
         <CardHeader>
           <CardTitle className="text-base">Salud del ecosistema</CardTitle>
-          <CardDescription>DistribuciÃ³n actual de proyectos.</CardDescription>
+          <CardDescription>Distribución actual de proyectos.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {["active", "blocked", "paused", "frozen", "completed"].map((s) => {
@@ -2002,7 +2002,7 @@ function ProjectDetail({ id }: { id: string }) {
     p.status === "blocked" || overdueTasks.length
       ? "En riesgo"
       : !p.nextAction && p.status === "active"
-        ? "Requiere decisiÃ³n"
+        ? "Requiere decisión"
         : "Saludable";
   const freeze = () =>
     setData((d) => ({
@@ -2070,8 +2070,8 @@ function ProjectDetail({ id }: { id: string }) {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Congelar proyecto</AlertDialogTitle>
                   <AlertDialogDescription>
-                    El proyecto saldrÃ¡ de los activos y quedarÃ¡ en el
-                    Congelador. Se registrarÃ¡ una revisiÃ³n dentro de 30 dÃ­as.
+                    El proyecto saldrá de los activos y quedará en el
+                    Congelador. Se registrará una revisión dentro de 30 días.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -2089,10 +2089,10 @@ function ProjectDetail({ id }: { id: string }) {
         <AttentionCard
           tone={!p.nextAction && p.status === "active" ? "warning" : "focus"}
           icon={Zap}
-          title="PrÃ³xima acciÃ³n"
+          title="Próxima acción"
           description={
             !p.nextAction && p.status === "active"
-              ? "Este proyecto activo necesita direcciÃ³n."
+              ? "Este proyecto activo necesita dirección."
               : "El siguiente movimiento concreto del proyecto."
           }
           className="md:col-span-2"
@@ -2100,7 +2100,7 @@ function ProjectDetail({ id }: { id: string }) {
           <p
             className={`text-xl font-semibold ${!p.nextAction && p.status === "active" ? "text-orange-800" : "text-blue-950"}`}
           >
-            {p.nextAction || "Definir una prÃ³xima acciÃ³n concreta"}
+            {p.nextAction || "Definir una próxima acción concreta"}
           </p>
           <Button variant="outline" size="sm" className="mt-4 bg-white/70">
             Ver tareas relacionadas <ArrowRight />
@@ -2133,15 +2133,15 @@ function ProjectDetail({ id }: { id: string }) {
               tone="critical"
               icon={AlertTriangle}
               title={`${overdueTasks.length} tareas vencidas`}
-              description="ReprogramÃ¡ o resolvÃ© estas tareas."
+              description="Reprogramá o resolvé estas tareas."
             />
           )}
           {upcomingDues.length > 0 && (
             <AttentionCard
               tone="warning"
               icon={CalendarClock}
-              title={`${upcomingDues.length} vencimientos prÃ³ximos`}
-              description="RevisÃ¡ costos y renovaciones."
+              title={`${upcomingDues.length} vencimientos próximos`}
+              description="Revisá costos y renovaciones."
             />
           )}
         </div>
@@ -2172,12 +2172,12 @@ function ProjectDetail({ id }: { id: string }) {
               </CardHeader>
               <CardContent className="grid gap-4 sm:grid-cols-2">
                 {[
-                  ["Ãrea", data.areas.find((a) => a.id === p.areaId)?.name],
+                  ["Área", data.areas.find((a) => a.id === p.areaId)?.name],
                   ["Tipo", labels[p.projectType] || p.projectType],
                   ["Madurez", labels[p.maturity]],
                   ["Fecha objetivo", fmt(p.targetDate)],
                   ["Prioridad", labels[p.priority]],
-                  ["Ãšltima actualizaciÃ³n", fmt(p.updatedAt)],
+                  ["Ãšltima actualización", fmt(p.updatedAt)],
                 ].map(([a, b]) => (
                   <div key={a}>
                     <p className="text-xs text-slate-400">{a}</p>
@@ -2219,7 +2219,7 @@ function ProjectDetail({ id }: { id: string }) {
               {tasks.length ? (
                 tasks.map((t) => <TaskLine key={t.id} task={t} />)
               ) : (
-                <Empty text="TodavÃ­a no hay tareas asociadas." />
+                <Empty text="Todavía no hay tareas asociadas." />
               )}
             </CardContent>
           </Card>
@@ -2228,7 +2228,7 @@ function ProjectDetail({ id }: { id: string }) {
           <SimpleList
             items={assets.map((a) => [
               a.name,
-              `${labels[a.type] || a.type} Â· ${a.provider || "Sin proveedor"}`,
+              `${labels[a.type] || a.type} · ${a.provider || "Sin proveedor"}`,
             ])}
           />
         </TabsContent>
@@ -2263,7 +2263,7 @@ function ProjectDetail({ id }: { id: string }) {
             items={[
               [
                 "Decisiones y contexto",
-                "La ficha estÃ¡ preparada para notas persistentes vÃ­a API REST.",
+                "La ficha está preparada para notas persistentes vía API REST.",
               ],
             ]}
           />
@@ -2272,7 +2272,7 @@ function ProjectDetail({ id }: { id: string }) {
           <SimpleList
             items={[
               ["Proyecto actualizado", fmt(p.updatedAt)],
-              ["PrÃ³xima acciÃ³n definida", p.nextAction || "Pendiente"],
+              ["Próxima acción definida", p.nextAction || "Pendiente"],
               ["Proyecto creado", "Registro inicial del sistema"],
             ]}
           />
@@ -2293,7 +2293,7 @@ function SimpleList({ items }: { items: (string | undefined)[][] }) {
             </div>
           ))
         ) : (
-          <Empty text="TodavÃ­a no hay elementos asociados." />
+          <Empty text="Todavía no hay elementos asociados." />
         )}
       </CardContent>
     </Card>
@@ -2320,12 +2320,12 @@ function Settings() {
   return (
     <>
       <Header
-        title="ConfiguraciÃ³n"
+        title="Configuración"
         desc="Preferencias de tu centro de control."
       />
       <Card className="max-w-2xl">
         <CardHeader>
-          <CardTitle className="text-base">Datos de demostraciÃ³n</CardTitle>
+          <CardTitle className="text-base">Datos de demostración</CardTitle>
           <CardDescription>
             La interfaz persiste tus cambios en este navegador. PostgreSQL queda
             disponible para el entorno completo.
