@@ -131,12 +131,16 @@ enum AssetStatus {
   cancelled
 }
 
+enum IdeaOrigin {
+  saas
+  thirdparty
+  personal
+}
+
 enum IdeaStatus {
-  captured
-  evaluating
-  future
-  converted_to_project
-  discarded
+  inbox
+  archived
+  promoted
 }
 
 enum DueItemType {
@@ -509,7 +513,9 @@ model Idea {
   project     Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
   potential   Level?
   complexity  Level?
-  status      IdeaStatus @default(captured)
+  origin      IdeaOrigin @default(personal)
+  destination String?
+  status      IdeaStatus @default(inbox)
   reviewDate  DateTime?
   notes       String?
   createdAt   DateTime   @default(now())

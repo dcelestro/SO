@@ -1,6 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { deleteArea } from "@/actions/areas";
+import { deleteProject } from "@/actions/projects";
+import { deleteModule } from "@/actions/modules";
 import { ChevronRight, FolderTree, Plus, RefreshCw } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -46,9 +49,9 @@ function locate(areas: ExplorerArea[], selection: ExplorerSelection): { area?: E
   }
   return {};
 }
-export function ExplorerShell({ initialSelection }: { initialSelection: ExplorerSelection }) {
-  const router = useRouter(); const [areas, setAreas] = useState<ExplorerArea[]>([]); const [selection, setSelection] = useState<ExplorerSelection>(initialSelection);
-  const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [source, setSource] = useState<DataSource>("backend"); const [form, setForm] = useState<FormState>(null); const [archiveOpen, setArchiveOpen] = useState(false);
+export function ExplorerShell({ initialSelection, initialAreas }: { initialSelection: ExplorerSelection, initialAreas: ExplorerArea[] }) {
+  const router = useRouter(); const [areas, setAreas] = useState<ExplorerArea[]>(initialAreas); const [selection, setSelection] = useState<ExplorerSelection>(initialSelection);
+  const [loading, setLoading] = useState(false); const [error, setError] = useState(""); const [source, setSource] = useState<DataSource>("backend"); const [form, setForm] = useState<FormState>(null); const [archiveOpen, setArchiveOpen] = useState(false);
   async function load() {
     setError("");
     setSource("backend");
@@ -64,19 +67,26 @@ export function ExplorerShell({ initialSelection }: { initialSelection: Explorer
       setLoading(false);
     }
   }
-  useEffect(() => {
-    let active = true;
-    fetch("/api/explorer/tree", { cache: "no-store" })
-      .then((response) => { if (!response.ok) throw new Error("No se pudo cargar el Explorador."); return response.json(); })
-      .then((data) => { if (active) { setAreas(data); setSource("backend"); } })
-      .catch((cause) => { if (active) { setAreas(demoTree()); setSource("demo"); setError(cause instanceof Error ? cause.message : "No se pudo cargar el Explorador."); } })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, []);
+
   const located = locate(areas, selection);
   function select(next: NonNullable<ExplorerSelection>) { setSelection(next); router.replace(`/explorer?type=${next.type}&id=${next.id}`, { scroll: false }); }
+  const [isPending, startTransition] = useTransition();
   function root() { setSelection(null); router.replace("/explorer", { scroll: false }); }
-  async function archive() { if (!selection) return; const resource = selection.type === "area" ? "areas" : selection.type === "project" ? "projects" : "modules"; const response = await fetch(`/api/${resource}/${selection.id}`, { method: "DELETE" }); if (!response.ok) { const body = await response.json(); setError(body.error ?? "No se pudo archivar."); return; } setArchiveOpen(false); root(); await load(); }
+  function archive() {
+    if (!selection) return;
+    startTransition(async () => {
+      try {
+        if (selection.type === "area") await deleteArea(selection.id);
+        else if (selection.type === "project") await deleteProject(selection.id);
+        else await deleteModule(selection.id);
+        setArchiveOpen(false);
+        root();
+        await load();
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "No se pudo archivar.");
+      }
+    });
+  }
   function saved(type: ExplorerNodeType, id: string) { load().then(() => select({ type, id })); }
   const archiveMessage = selection?.type === "area" ? "¿Archivar esta área? Sus proyectos dejarán de mostrarse en vistas activas." : selection?.type === "project" ? "¿Archivar este proyecto? Sus módulos dejarán de mostrarse en vistas activas." : "¿Archivar este módulo?";
   const currentEntity = located.module ?? located.project ?? located.area;

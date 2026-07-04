@@ -80,7 +80,7 @@ export async function GET() {
         where: { status: "completed", completedAt: { gte: week } },
       }),
       db.idea.count({
-        where: { status: { notIn: ["discarded", "converted_to_project"] } },
+        where: { status: { notIn: ["archived", "promoted"] } },
       }),
       db.review.count({
         where: { status: "pending", nextReviewDate: { lt: now } },

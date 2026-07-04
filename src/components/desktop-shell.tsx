@@ -47,8 +47,8 @@ const sidebarGroups = [
     label: "Accesos",
     items: [
       { href: "/dashboard", label: "Escritorio", Icon: Home },
-      { label: "Explorador", Icon: Compass },
-      { label: "Inbox", Icon: Inbox },
+      { href: "/explorer", label: "Explorador", Icon: Compass },
+      { href: "/tasks?tab=inbox", label: "Inbox", Icon: Inbox },
       { label: "Alertas", Icon: Bell },
       { label: "Recursos", Icon: Layers },
       { label: "Archivo", Icon: Archive },

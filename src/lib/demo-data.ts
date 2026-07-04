@@ -1,10 +1,10 @@
-export type Area={id:string;name:string;color:string};
-export type Project={id:string;name:string;description:string;areaId:string;status:string;priority:string;maturity:string;projectType:string;nextAction?:string;targetDate?:string;progressPercentage:number;isFrozen?:boolean;frozenReason?:string;frozenUntil?:string;updatedAt:string};
-export type Task={id:string;title:string;projectId?:string;status:string;priority:string;dueDate?:string;isToday?:boolean;isCritical?:boolean;context?:string};
-export type Asset={id:string;name:string;projectId?:string;type:string;provider?:string;url?:string;accountEmail?:string;passwordManagerReference?:string;renewalDate?:string;status:string};
-export type Idea={id:string;title:string;description?:string;areaId?:string;projectId?:string;potential:string;complexity:string;status:string;reviewDate?:string};
-export type Due={id:string;title:string;projectId?:string;type:string;dueDate:string;amount?:number;currency?:string;status:string};
-export type Review={id:string;title:string;projectId?:string;type:string;frequency:string;nextReviewDate:string;lastReviewDate?:string;status:string};
+export type Area={id:string;name:string;color:string|null;description?:string|null};
+export type Project={id:string;name:string;description:string|null;areaId:string;status:string;priority:string;maturity:string;projectType:string;nextAction?:string|null;targetDate?:string|Date|null;progressPercentage:number;isFrozen?:boolean;frozenReason?:string|null;frozenUntil?:string|Date|null;updatedAt:string|Date|null;createdAt?:string|Date|null};
+export type Task={id:string;title:string;description?:string|null;projectId?:string|null;areaId?:string|null;status:string;priority:string;dueDate?:string|Date|null;isToday?:boolean;isCritical?:boolean;context?:string;completedAt?:string|Date|null;createdAt?:string|Date|null;updatedAt?:string|Date|null};
+export type Asset={id:string;name:string;projectId?:string|null;areaId?:string|null;type:string;provider?:string|null;url?:string|null;accountEmail?:string|null;passwordManagerReference?:string|null;renewalDate?:string|Date|null;status:string;cost?:number|null;currency?:string|null;createdAt?:string|Date|null;updatedAt?:string|Date|null;notes?:string|null};
+export type Idea={id:string;title:string;description?:string|null;areaId?:string|null;projectId?:string|null;potential:string|null;complexity:string|null;status:string;reviewDate?:string|Date|null;createdAt?:string|Date|null;updatedAt?:string|Date|null;notes?:string|null};
+export type Due={id:string;title:string;description?:string|null;projectId?:string|null;assetId?:string|null;type:string;dueDate:string|Date;reminderDate?:string|Date|null;recurrence?:string;amount?:number|null;currency?:string|null;status:string;createdAt?:string|Date|null;updatedAt?:string|Date|null};
+export type Review={id:string;title:string;description?:string|null;projectId?:string|null;areaId?:string|null;type:string;frequency:string;nextReviewDate:string|Date;lastReviewDate?:string|Date|null;status:string;createdAt?:string|Date|null;updatedAt?:string|Date|null};
 const iso=(n:number)=>new Date(Date.now()+n*86400000).toISOString();
 export const initialData={
  areas:[{id:"a1",name:"Abundia",color:"#1e293b"},{id:"a2",name:"Apps personales",color:"#2563eb"},{id:"a3",name:"Webs",color:"#64748b"},{id:"a4",name:"Ecommerce",color:"#059669"},{id:"a5",name:"Newsletter",color:"#7c3aed"},{id:"a6",name:"Infraestructura",color:"#d97706"},{id:"a7",name:"Administración",color:"#475569"}] as Area[],

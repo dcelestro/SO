@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
-import { nanoid } from "@/lib/id";
-import { useData } from "@/components/data-provider";
+import { useCreateTaskMutation, useCreateProjectMutation, useCreateAssetMutation, useCreateIdeaMutation, useCreateDueItemMutation, useCreateReviewMutation } from "@/hooks/use-queries";
+import { useState, useTransition } from "react";
+import { useAppData as useData } from "@/components/use-app-data";
 import {
   Dialog,
   DialogContent,
@@ -46,213 +46,104 @@ export function QuickCreate({
   const { data, setData } = useData();
   const [kind, setKind] = useState("task"),
     [error, setError] = useState("");
+  const [isPending, startTransition] = useTransition();
+  const createProjectMut = useCreateProjectMutation();
+  const createTaskMut = useCreateTaskMutation();
+  const createAssetMut = useCreateAssetMutation();
+  const createIdeaMut = useCreateIdeaMutation();
+  const createDueItemMut = useCreateDueItemMutation();
+  const createReviewMut = useCreateReviewMutation();
+
   function save(fd: FormData) {
-    const title = String(fd.get("title") || "").trim(),
-      rawProject = String(fd.get("projectId") || ""),
-      projectId = rawProject === "none" ? undefined : rawProject || undefined,
-      areaId =
-        String(fd.get("areaId") || "") ||
-        data.projects.find((p) => p.id === projectId)?.areaId;
+    const title = String(fd.get("title") || "").trim();
+    const rawProject = String(fd.get("projectId") || "");
+    const projectId = rawProject === "none" ? undefined : rawProject || undefined;
+    const areaId =
+      String(fd.get("areaId") || "") ||
+      data.projects.find((p) => p.id === projectId)?.areaId;
+
     if (!title) {
       setError("Escribí un título concreto.");
       return;
     }
-    const id = nanoid(),
-      now = new Date().toISOString(),
-      date = String(fd.get("date") || "") || undefined,
-      priority = String(fd.get("priority") || "medium");
+
+    const date = String(fd.get("date") || "") || undefined;
+    const priority = String(fd.get("priority") || "medium");
+    const description = String(fd.get("description") || "");
+
     if (kind === "project") {
-      const status = String(fd.get("status") || "idea"),
-        nextAction = String(fd.get("nextAction") || "").trim();
+      const status = String(fd.get("status") || "idea");
+      const nextAction = String(fd.get("nextAction") || "").trim();
+
       if (!areaId) {
         setError("Seleccioná un área.");
         return;
       }
       if (status === "active" && !nextAction) {
-        setError(
-          "Todo proyecto activo debe tener una próxima acción concreta.",
-        );
+        setError("Todo proyecto activo debe tener una próxima acción concreta.");
         return;
       }
-      setData((d) => ({
-        ...d,
-        projects: [
-          {
-            id,
-            name: title,
-            description: String(fd.get("description") || ""),
-            areaId,
-            status,
-            priority,
-            maturity: "idea",
-            projectType: "other",
-            nextAction: nextAction || undefined,
-            progressPercentage: 0,
-            updatedAt: now,
-          },
-          ...d.projects,
-        ],
-      }));
-    } else if (kind === "task")
-      setData((d) => ({
-        ...d,
-        tasks: [
-          {
-            id,
-            title,
-            projectId,
-            status: projectId ? "pending" : "inbox",
-            priority,
-            dueDate: date,
-          },
-          ...d.tasks,
-        ],
-      }));
-    else if (kind === "idea")
-      setData((d) => ({
-        ...d,
-        ideas: [
-          {
-            id,
-            title,
-            description: String(fd.get("description") || ""),
-            areaId,
-            potential: priority,
-            complexity: "medium",
-            status: "captured",
-            reviewDate: date,
-          },
-          ...d.ideas,
-        ],
-      }));
-    else if (kind === "asset")
-      setData((d) => ({
-        ...d,
-        assets: [
-          {
-            id,
-            name: title,
-            projectId,
-            type: String(fd.get("type") || "other"),
-            provider: String(fd.get("provider") || ""),
-            renewalDate: date,
-            status: "active",
-          },
-          ...d.assets,
-        ],
-      }));
-    else if (kind === "due")
-      setData((d) => ({
-        ...d,
-        dues: [
-          {
-            id,
-            title,
-            projectId,
-            type: String(fd.get("type") || "other"),
-            dueDate: date || now,
-            status: "pending",
-          },
-          ...d.dues,
-        ],
-      }));
-    else
-      setData((d) => ({
-        ...d,
-        reviews: [
-          {
-            id,
-            title,
-            projectId,
-            type: "project_review",
-            frequency: "monthly",
-            nextReviewDate: date || now,
-            status: "pending",
-          },
-          ...d.reviews,
-        ],
-      }));
-    const resource = {
-      project: "projects",
-      task: "tasks",
-      idea: "ideas",
-      asset: "assets",
-      due: "due-items",
-      review: "reviews",
-    }[kind];
-    const payload = Object.fromEntries(
-      [...fd.entries()].filter(([, value]) => value !== "" && value !== "none"),
-    );
-    const cleanPayload = Object.fromEntries(
-      Object.entries(payload).filter(
-        ([key]) => !["title", "date"].includes(key),
-      ),
-    );
-    const apiPayload =
-      kind === "project"
-        ? {
-            ...cleanPayload,
-            name: title,
-            areaId,
-            maturity: "idea",
-            projectType: "other",
-          }
-        : kind === "task"
-          ? {
-              ...cleanPayload,
-              title,
-              projectId,
-              dueDate: date,
-              status: projectId ? "pending" : "inbox",
-            }
-          : kind === "idea"
-            ? {
-                ...cleanPayload,
-                title,
-                areaId,
-                potential: priority,
-                complexity: "medium",
-                status: "captured",
-                reviewDate: date,
-              }
-            : kind === "asset"
-              ? {
-                  ...cleanPayload,
-                  name: title,
-                  projectId,
-                  renewalDate: date,
-                  status: "active",
-                  type: payload.type || "other",
-                }
-              : kind === "due"
-                ? {
-                    ...cleanPayload,
-                    title,
-                    projectId,
-                    dueDate: date || now,
-                    status: "pending",
-                    recurrence: "none",
-                    type: payload.type || "other",
-                  }
-                : {
-                    ...cleanPayload,
-                    title,
-                    projectId,
-                    nextReviewDate: date || now,
-                    status: "pending",
-                    frequency: "monthly",
-                    type: "project_review",
-                  };
-    if (resource) {
-      void fetch(`/api/${resource}`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(apiPayload),
+
+      createProjectMut.mutate({
+        name: title,
+        description,
+        areaId,
+        status,
+        priority,
+        maturity: "idea",
+        projectType: "other",
+        nextAction: nextAction || undefined,
+      });
+    } else if (kind === "task") {
+      createTaskMut.mutate({
+        title,
+        projectId,
+        status: projectId ? "pending" : "inbox",
+        priority,
+        dueDate: date,
+      });
+    } else if (kind === "idea") {
+      createIdeaMut.mutate({
+        title,
+        description,
+        areaId,
+        potential: priority,
+        complexity: "medium",
+        status: "captured",
+        reviewDate: date,
+      });
+    } else if (kind === "asset") {
+      createAssetMut.mutate({
+        name: title,
+        projectId,
+        type: String(fd.get("type") || "other"),
+        provider: String(fd.get("provider") || ""),
+        renewalDate: date,
+        status: "active",
+      });
+    } else if (kind === "due") {
+      createDueItemMut.mutate({
+        title,
+        projectId,
+        type: String(fd.get("type") || "other"),
+        dueDate: date || new Date().toISOString(),
+        status: "pending",
+      });
+    } else {
+      createReviewMut.mutate({
+        title,
+        projectId,
+        type: "project_review",
+        frequency: "monthly",
+        nextReviewDate: date || new Date().toISOString(),
+        status: "pending",
       });
     }
+
     setError("");
     onOpenChange(false);
   }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
@@ -369,8 +260,8 @@ export function QuickCreate({
             >
               Cancelar
             </Button>
-            <Button type="submit">
-              Crear {kinds.find((k) => k.id === kind)?.label.toLowerCase()}
+            <Button type="submit" disabled={isPending}>
+              {isPending ? "Creando..." : `Crear ${kinds.find((k) => k.id === kind)?.label.toLowerCase()}`}
             </Button>
           </div>
         </form>

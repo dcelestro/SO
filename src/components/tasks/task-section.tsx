@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { updateTask, deleteTask } from "@/actions/tasks";
 import { Check, Clock3, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -14,8 +15,21 @@ export function TaskSection({ areaId, projectId, moduleId }: { areaId: string; p
   const [tasks, setTasks] = useState<ExplorerTask[]>([]); const [loading, setLoading] = useState(true); const [formTask, setFormTask] = useState<ExplorerTask | "new" | null>(null); const [discardTask, setDiscardTask] = useState<ExplorerTask | null>(null); const [refresh, setRefresh] = useState(0);
   useEffect(() => { let active = true; const params = new URLSearchParams({ areaId, direct: "true" }); if (projectId) params.set("projectId", projectId); if (moduleId) params.set("moduleId", moduleId); fetch(`/api/tasks?${params}`, { cache: "no-store" }).then((response) => { if (!response.ok) throw new Error(); return response.json(); }).then((data) => { if (active) setTasks(data); }).finally(() => { if (active) setLoading(false); }); return () => { active = false; }; }, [areaId, projectId, moduleId, refresh]);
   const mutate = () => setRefresh((value) => value + 1);
-  async function complete(task: ExplorerTask) { await fetch(`/api/tasks/${task.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "completed" }) }); mutate(); }
-  async function discard() { if (!discardTask) return; await fetch(`/api/tasks/${discardTask.id}`, { method: "DELETE" }); setDiscardTask(null); mutate(); }
+  const [isPending, startTransition] = useTransition();
+  function complete(task: ExplorerTask) {
+    startTransition(async () => {
+      await updateTask(task.id, { status: "completed" });
+      mutate();
+    });
+  }
+  function discard() {
+    if (!discardTask) return;
+    startTransition(async () => {
+      await deleteTask(discardTask.id);
+      setDiscardTask(null);
+      mutate();
+    });
+  }
   const active = tasks.filter((task) => !["completed", "discarded"].includes(task.status)).length; const progress = tasks.filter((task) => task.status === "in_progress").length; const completed = tasks.filter((task) => task.status === "completed").length;
   const direct = projectId && !moduleId ? tasks.filter((task) => !task.moduleId) : tasks; const fromModules = projectId && !moduleId ? tasks.filter((task) => task.moduleId) : [];
   const empty = moduleId ? "No hay tareas en este módulo." : projectId ? "Todavía no hay tareas directas en este proyecto." : "Todavía no hay tareas directas en esta área.";

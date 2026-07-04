@@ -3,7 +3,7 @@ const optionalText = z.string().trim().nullish().transform((value) => value || n
 const optionalDate = z.string().trim().nullish().transform((value) => value || null);
 const fields = {
   title: z.string().trim().min(1, "El título es obligatorio."), description: optionalText,
-  areaId: z.string().min(1, "El área es obligatoria."), projectId: optionalText, moduleId: optionalText,
+  areaId: optionalText, projectId: optionalText, moduleId: optionalText,
   status: z.enum(["inbox", "pending", "in_progress", "waiting", "blocked", "completed", "discarded"]),
   priority: z.enum(["critical", "high", "medium", "low"]), dueDate: optionalDate, startDate: optionalDate,
   estimatedMinutes: z.coerce.number().int().positive().nullish().transform((value) => value ?? null),

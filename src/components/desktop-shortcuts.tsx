@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { createElement, useState } from "react";
+import { useRouter } from "next/navigation";
 import * as Icons from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
@@ -18,6 +19,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Mail: Icons.Mail,
   Inbox: Icons.Inbox,
   FolderTree: Icons.FolderTree,
+  Home: Icons.Home,
   AlertCircle: Icons.AlertCircle,
   Plus: Icons.Plus,
   MoreVertical: Icons.MoreVertical,
@@ -264,6 +266,7 @@ function ShortcutWindow({ shortcut, open, onOpenChange }: ShortcutWindowProps) {
 }
 
 export function DesktopShortcutGrid() {
+  const router = useRouter();
   const { shortcuts, loading, create, update, remove } = useDesktopShortcuts();
   const [openShortcut, setOpenShortcut] = useState<DesktopShortcut | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -282,6 +285,14 @@ export function DesktopShortcutGrid() {
   const handleDelete = async (id: string) => {
     await remove(id);
     setDeleteConfirm(null);
+  };
+
+  const handleOpen = (shortcut: DesktopShortcut) => {
+    if (shortcut.targetType === "explorer") return router.push("/explorer");
+    if (["area", "project", "module"].includes(shortcut.targetType ?? "")) {
+      return router.push(shortcut.targetId ? `/explorer?type=${shortcut.targetType}&id=${shortcut.targetId}` : "/explorer");
+    }
+    setOpenShortcut(shortcut);
   };
 
   if (loading) {
@@ -315,11 +326,21 @@ export function DesktopShortcutGrid() {
 
       {/* Shortcuts grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+        <div className="flex flex-col items-center gap-3 p-4 rounded-lg hover:bg-slate-200/50 transition-colors group relative">
+          <button
+            onClick={() => router.push("/home")}
+            aria-label="Abrir Inicio"
+            className="w-14 h-14 rounded-lg flex items-center justify-center bg-slate-950 transition-all group-hover:scale-110"
+          >
+            <Icons.Home className="w-7 h-7 text-white" />
+          </button>
+          <p className="text-sm font-medium text-slate-900 text-center truncate w-full max-w-[80px]">Inicio</p>
+        </div>
         {shortcuts.map((shortcut) => (
           <DesktopShortcutItem
             key={shortcut.id}
             shortcut={shortcut}
-            onOpen={setOpenShortcut}
+            onOpen={handleOpen}
             onEdit={setEditingShortcut}
             onDelete={setDeleteConfirm}
           />

@@ -40,9 +40,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     const resources = [
-      "areas",
-      "projects",
-      "tasks",
       "assets",
       "ideas",
       "due-items",
@@ -57,11 +54,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         }),
       ),
     )
-      .then(([areas, projects, tasks, assets, ideas, dues, reviews, focus]) => {
-        setData({
-          areas,
-          projects,
-          tasks,
+      .then(([assets, ideas, dues, reviews, focus]) => {
+        setData(prev => ({
+          ...prev,
           assets,
           ideas,
           dues,
@@ -79,7 +74,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             weeklyGoal: focus?.weeklyGoal || "",
             notes: focus?.notes || "",
           },
-        });
+        }));
         setDataSource("backend");
         setDataError(null);
         console.info("[Nexo] Fuente de datos activa: backend real");

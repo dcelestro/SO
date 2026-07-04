@@ -113,6 +113,9 @@ export async function POST(req: NextRequest, { params }: Context) {
   if (unauthorized) return unauthorized;
   try {
     const { resource, slug = [] } = await params;
+    if (["areas", "projects", "modules", "tasks"].includes(resource)) {
+      return error("Este recurso migró a Server Actions nativas.", 403);
+    }
     const db = getPrisma();
     const m = model(db, resource);
     const body = await req.json();
@@ -182,7 +185,7 @@ export async function POST(req: NextRequest, { params }: Context) {
       });
       await db.idea.update({
         where: { id },
-        data: { status: "converted_to_project", projectId: project.id },
+        data: { status: "promoted", projectId: project.id },
       });
       return NextResponse.json(project, { status: 201 });
     }
@@ -198,6 +201,9 @@ export async function PATCH(req: NextRequest, { params }: Context) {
   if (unauthorized) return unauthorized;
   try {
     const { resource, slug = [] } = await params;
+    if (["areas", "projects", "modules", "tasks"].includes(resource)) {
+      return error("Este recurso migró a Server Actions nativas.", 403);
+    }
     if (!slug[0]) return error("ID requerido");
     const db = getPrisma();
     return NextResponse.json(
@@ -215,6 +221,9 @@ export async function DELETE(_: NextRequest, { params }: Context) {
   if (unauthorized) return unauthorized;
   try {
     const { resource, slug = [] } = await params;
+    if (["areas", "projects", "modules", "tasks"].includes(resource)) {
+      return error("Este recurso migró a Server Actions nativas.", 403);
+    }
     if (!slug[0]) return error("ID requerido");
     const db = getPrisma();
     await model(db, resource).delete({ where: { id: slug[0] } });

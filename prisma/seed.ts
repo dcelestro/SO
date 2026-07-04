@@ -230,8 +230,8 @@ async function main() {
 
   await db.idea.createMany({
     data: [
-      { title: "Biblioteca de decisiones", description: "Registrar por qué se eligió cada camino.", areaId: apps.id, potential: "high", complexity: "medium", status: "evaluating", reviewDate: day(14) },
-      { title: "Radar de costos SaaS", areaId: areas.get("Administración")!.id, potential: "medium", complexity: "low", status: "captured", reviewDate: day(21) },
+      { title: "Biblioteca de decisiones", description: "Registrar por qué se eligió cada camino.", areaId: apps.id, potential: "high", complexity: "medium", status: "inbox", reviewDate: day(14) },
+      { title: "Radar de costos SaaS", areaId: areas.get("Administración")!.id, potential: "medium", complexity: "low", status: "inbox", reviewDate: day(21) },
     ],
   });
 

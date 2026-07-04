@@ -2,9 +2,11 @@ import { notFound } from "next/navigation";
 import { Workspace } from "@/components/workspace";
 const sections = new Set([
   "dashboard",
+  "desktop",
   "explorer",
   "projects",
   "tasks",
+  "library",
   "focus",
   "ecosystem",
   "assets",

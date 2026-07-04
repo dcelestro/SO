@@ -1,7 +1,8 @@
 import { apiError } from "@/lib/explorer-api";
 import { getPrisma } from "@/lib/prisma";
-type Links = { areaId: string; projectId?: string | null; moduleId?: string | null };
+type Links = { areaId?: string | null; projectId?: string | null; moduleId?: string | null };
 export async function validateTaskLinks(data: Links) {
+  if (!data.areaId) { if (data.projectId || data.moduleId) return apiError("Una tarea con proyecto o módulo también debe pertenecer a un área."); return null; }
   const db = getPrisma(); const area = await db.area.findUnique({ where: { id: data.areaId } });
   if (!area) return apiError("El área indicada no existe.");
   if (data.projectId) { const project = await db.project.findUnique({ where: { id: data.projectId } }); if (!project || project.areaId !== data.areaId) return apiError("El proyecto no pertenece al área indicada."); }

@@ -5,3 +5,5 @@ export function getPrisma() {
   if (!globalForPrisma.prisma) globalForPrisma.prisma = new PrismaClient();
   return globalForPrisma.prisma;
 }
+
+export const prisma = getPrisma();
