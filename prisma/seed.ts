@@ -269,6 +269,67 @@ async function main() {
     },
   });
 
+
+  await db.libraryItem.deleteMany();
+  await db.libraryItem.createMany({
+    data: [
+      {
+        title: "Prompt: Auditoría técnica de repositorio",
+        description: "Útil para cuando te pasan un repositorio nuevo y necesitás entender rápido de qué va, stack, y detectar red flags.",
+        type: "prompt",
+        category: "desarrollo",
+        tags: ["auditoria", "onboarding", "tech-lead"],
+        variables: ["{{repo_url}}"],
+        content: "Actúa como un Tech Lead Senior.\nAnaliza el siguiente repositorio: {{repo_url}}\n\nQuiero que me devuelvas un reporte con:\n1. Stack tecnológico detectado y patrones arquitectónicos.\n2. Red flags o malas prácticas evidentes (ej. credenciales hardcodeadas, dependencias vulnerables).\n3. Complejidad de la base de código y deuda técnica estimada.\n4. Top 3 cosas a mejorar urgentemente.\n\nSé directo y técnico."
+      },
+      {
+        title: "Prompt: Crear issue/tarea para Dev",
+        description: "Genera una tarea accionable para pasarle a un desarrollador, a partir de un requerimiento ambiguo.",
+        type: "prompt",
+        category: "prompts",
+        tags: ["agile", "issues", "pm"],
+        variables: ["{{requerimiento}}"],
+        content: "Convertí el siguiente requerimiento ambiguo en una tarea (issue) lista para que un desarrollador la tome y programe:\n\nRequerimiento: {{requerimiento}}\n\nDevolveme:\n- Título descriptivo\n- Contexto breve\n- Criterios de aceptación claros (viñetas)\n- Consideraciones técnicas o notas (opcional)"
+      },
+      {
+        title: "Modelo de Especificación Funcional",
+        description: "Plantilla para describir una nueva feature antes de programarla.",
+        type: "functional_spec",
+        category: "documentacion",
+        tags: ["specs", "producto"],
+        variables: ["{{feature_name}}", "{{objetivo}}", "{{restricciones}}"],
+        content: "# Especificación Funcional: {{feature_name}}\n\n## 1. Objetivo\n{{objetivo}}\n\n## 2. Casos de Uso\n- [ ] Como usuario quiero... para...\n- [ ] Como admin quiero... para...\n\n## 3. Restricciones y Supuestos\n{{restricciones}}\n\n## 4. Fuera del Alcance (Out of scope)\n- ...\n\n## 5. Diseño de Interfaz / Wireframes\n(Pegar links acá)"
+      },
+      {
+        title: "Mensaje a cliente: Avance semanal",
+        description: "Plantilla para enviar reporte de status semanal de forma profesional y transparente.",
+        type: "client_message",
+        category: "clientes",
+        tags: ["comunicacion", "status"],
+        variables: ["{{cliente}}", "{{logros}}", "{{siguientes_pasos}}", "{{bloqueos}}"],
+        content: "Hola {{cliente}}, ¿cómo estás?\n\nTe escribo para dejarte el reporte de avances de esta semana en el proyecto.\n\n✅ **Lo que completamos:**\n{{logros}}\n\n🔜 **Próximos pasos (semana que viene):**\n{{siguientes_pasos}}\n\n⚠️ **Dudas o bloqueos:**\n{{bloqueos}}\n\nCualquier duda, avisame y lo revisamos.\n¡Buen fin de semana!"
+      },
+      {
+        title: "Checklist: Revisión antes de entregar feature",
+        description: "Pasos mínimos antes de dar por cerrada una funcionalidad y pasarla a QA o Prod.",
+        type: "checklist",
+        category: "testing",
+        tags: ["qa", "checklist"],
+        variables: [],
+        content: "- [ ] El código compila sin errores (ej. `tsc --noEmit`).\n- [ ] La consola del navegador no tira errores rojos.\n- [ ] Probado en Mobile y Desktop.\n- [ ] Funciona el 'happy path'.\n- [ ] Funciona cuando el usuario hace cosas inesperadas (manejo de errores).\n- [ ] El código viejo no se rompió (regression check).\n- [ ] Se removieron los console.log o prints de debug.\n- [ ] No hay credenciales ({{API_KEY}}) harcodeadas en texto plano."
+      },
+      {
+        title: "Modelo de Reporte de Bugs",
+        description: "Estructura para reportar un bug de manera que el dev pueda reproducirlo.",
+        type: "report",
+        category: "testing",
+        tags: ["bugs", "qa"],
+        variables: ["{{titulo}}", "{{entorno}}"],
+        content: "## Bug: {{titulo}}\n\n**Entorno:** {{entorno}} (ej. Prod, Staging, Chrome Mac)\n\n**Pasos para reproducir:**\n1. Entrar a...\n2. Hacer clic en...\n3. Escribir...\n\n**Comportamiento esperado:**\nDebería pasar X.\n\n**Comportamiento actual (Error):**\nEstá pasando Y.\n\n**Evidencia:**\n(Pegar URL de video o screenshot)"
+      }
+    ]
+  });
+
   await db.desktopShortcut.createMany({
     data: [
       { name: "Explorador", type: ShortcutType.system, targetType: "explorer", icon: "FolderTree", color: "#475569", sortOrder: 0, isPinned: true },

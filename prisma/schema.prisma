@@ -818,3 +818,47 @@ model Board {
   @@index([areaId, projectId, moduleId])
   @@index([status, updatedAt])
 }
+
+enum LibraryItemType {
+  prompt
+  document_template
+  client_message
+  checklist
+  dev_issue
+  functional_spec
+  technical_spec
+  report
+  email
+  other
+}
+
+enum LibraryItemStatus {
+  draft
+  active
+  archived
+}
+
+enum LibraryItemCategory {
+  desarrollo
+  documentacion
+  clientes
+  comercial
+  testing
+  operacion
+  prompts
+  otros
+}
+
+model LibraryItem {
+  id          String              @id @default(cuid())
+  title       String
+  description String
+  type        LibraryItemType
+  category    LibraryItemCategory
+  tags        String[]
+  content     String              @db.Text
+  variables   String[]
+  status      LibraryItemStatus   @default(active)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}

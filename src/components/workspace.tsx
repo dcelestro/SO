@@ -174,7 +174,7 @@ export function Workspace({ section, id }: { section: string; id?: string }) {
   if (section === "reviews") return <Reviews />;
   if (section === "kpis") return <Kpis />;
   if (section === "settings") return <Settings />;
-  if (section === "library") return <LibraryPending />;
+  
   if (section === "alerts") return <AlertsPending />;
   if (section === "archive") return <ArchivePending />;
 
