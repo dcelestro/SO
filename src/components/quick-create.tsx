@@ -1,6 +1,8 @@
 "use client";
+
 import { useCreateTaskMutation, useCreateProjectMutation, useCreateAssetMutation, useCreateIdeaMutation, useCreateDueItemMutation, useCreateReviewMutation } from "@/hooks/use-queries";
-import { useState, useTransition } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAppData as useData } from "@/components/use-app-data";
 import {
   Dialog,
@@ -28,6 +30,7 @@ import {
   RefreshCw,
   ShieldCheck,
 } from "lucide-react";
+
 const kinds = [
   { id: "task", label: "Tarea", icon: CheckSquare2 },
   { id: "project", label: "Proyecto", icon: FolderKanban },
@@ -36,6 +39,12 @@ const kinds = [
   { id: "due", label: "Vencimiento", icon: CalendarClock },
   { id: "review", label: "Revisión", icon: RefreshCw },
 ];
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  return "No se pudo crear el registro.";
+}
+
 export function QuickCreate({
   open,
   onOpenChange,
@@ -43,10 +52,11 @@ export function QuickCreate({
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
-  const { data, setData } = useData();
-  const [kind, setKind] = useState("task"),
-    [error, setError] = useState("");
-  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+  const { data } = useData();
+  const [kind, setKind] = useState("task");
+  const [error, setError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
   const createProjectMut = useCreateProjectMutation();
   const createTaskMut = useCreateTaskMutation();
   const createAssetMut = useCreateAssetMutation();
@@ -54,7 +64,7 @@ export function QuickCreate({
   const createDueItemMut = useCreateDueItemMutation();
   const createReviewMut = useCreateReviewMutation();
 
-  function save(fd: FormData) {
+  async function save(fd: FormData) {
     const title = String(fd.get("title") || "").trim();
     const rawProject = String(fd.get("projectId") || "");
     const projectId = rawProject === "none" ? undefined : rawProject || undefined;
@@ -71,77 +81,85 @@ export function QuickCreate({
     const priority = String(fd.get("priority") || "medium");
     const description = String(fd.get("description") || "");
 
-    if (kind === "project") {
-      const status = String(fd.get("status") || "idea");
-      const nextAction = String(fd.get("nextAction") || "").trim();
-
-      if (!areaId) {
-        setError("Seleccioná un área.");
-        return;
-      }
-      if (status === "active" && !nextAction) {
-        setError("Todo proyecto activo debe tener una próxima acción concreta.");
-        return;
-      }
-
-      createProjectMut.mutate({
-        name: title,
-        description,
-        areaId,
-        status,
-        priority,
-        maturity: "idea",
-        projectType: "other",
-        nextAction: nextAction || undefined,
-      });
-    } else if (kind === "task") {
-      createTaskMut.mutate({
-        title,
-        projectId,
-        status: projectId ? "pending" : "inbox",
-        priority,
-        dueDate: date,
-      });
-    } else if (kind === "idea") {
-      createIdeaMut.mutate({
-        title,
-        description,
-        areaId,
-        potential: priority,
-        complexity: "medium",
-        status: "captured",
-        reviewDate: date,
-      });
-    } else if (kind === "asset") {
-      createAssetMut.mutate({
-        name: title,
-        projectId,
-        type: String(fd.get("type") || "other"),
-        provider: String(fd.get("provider") || ""),
-        renewalDate: date,
-        status: "active",
-      });
-    } else if (kind === "due") {
-      createDueItemMut.mutate({
-        title,
-        projectId,
-        type: String(fd.get("type") || "other"),
-        dueDate: date || new Date().toISOString(),
-        status: "pending",
-      });
-    } else {
-      createReviewMut.mutate({
-        title,
-        projectId,
-        type: "project_review",
-        frequency: "monthly",
-        nextReviewDate: date || new Date().toISOString(),
-        status: "pending",
-      });
-    }
-
+    setIsSaving(true);
     setError("");
-    onOpenChange(false);
+
+    try {
+      if (kind === "project") {
+        const status = String(fd.get("status") || "idea");
+        const nextAction = String(fd.get("nextAction") || "").trim();
+
+        if (!areaId) {
+          setError("Seleccioná un área.");
+          return;
+        }
+        if (status === "active" && !nextAction) {
+          setError("Todo proyecto activo debe tener una próxima acción concreta.");
+          return;
+        }
+
+        await createProjectMut.mutateAsync({
+          name: title,
+          description,
+          areaId,
+          status,
+          priority,
+          maturity: "idea",
+          projectType: "other",
+          nextAction: nextAction || undefined,
+        });
+      } else if (kind === "task") {
+        await createTaskMut.mutateAsync({
+          title,
+          projectId,
+          status: projectId ? "pending" : "inbox",
+          priority,
+          dueDate: date,
+        });
+      } else if (kind === "idea") {
+        await createIdeaMut.mutateAsync({
+          title,
+          description,
+          areaId,
+          origin: "personal",
+          status: "inbox",
+          reviewDate: date,
+        });
+      } else if (kind === "asset") {
+        await createAssetMut.mutateAsync({
+          name: title,
+          projectId,
+          type: String(fd.get("type") || "other"),
+          provider: String(fd.get("provider") || ""),
+          renewalDate: date,
+          status: "active",
+        });
+      } else if (kind === "due") {
+        await createDueItemMut.mutateAsync({
+          title,
+          projectId,
+          type: String(fd.get("type") || "other"),
+          dueDate: date || new Date().toISOString(),
+          status: "pending",
+        });
+      } else {
+        await createReviewMut.mutateAsync({
+          title,
+          projectId,
+          type: "project_review",
+          frequency: "monthly",
+          nextReviewDate: date || new Date().toISOString(),
+          status: "pending",
+        });
+      }
+
+      router.refresh();
+      onOpenChange(false);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -226,7 +244,7 @@ export function QuickCreate({
                   ["low", "Baja"],
                 ]}
               />
-            )}{" "}
+            )}
             {["task", "idea", "asset", "due", "review"].includes(kind) && (
               <Field label={kind === "asset" ? "Renovación" : "Fecha"}>
                 <Input type="date" name="date" />
@@ -257,11 +275,12 @@ export function QuickCreate({
               type="button"
               variant="ghost"
               onClick={() => onOpenChange(false)}
+              disabled={isSaving}
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Creando..." : `Crear ${kinds.find((k) => k.id === kind)?.label.toLowerCase()}`}
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? "Creando..." : `Crear ${kinds.find((k) => k.id === kind)?.label.toLowerCase()}`}
             </Button>
           </div>
         </form>
@@ -269,6 +288,7 @@ export function QuickCreate({
     </Dialog>
   );
 }
+
 function Field({
   label,
   children,
@@ -283,6 +303,7 @@ function Field({
     </div>
   );
 }
+
 function Picker({
   name,
   label,
