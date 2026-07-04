@@ -1,6 +1,9 @@
 export type BoardType = "whiteboard" | "flowchart" | "architecture" | "process" | "mindmap" | "notes" | "other";
 export type BoardStatus = "draft" | "active" | "archived";
-export interface BoardNode { id: string; type: "box" | "text"; x: number; y: number; width: number; height: number; text: string; color: string; shape: "rectangle" }
+export type BoardShape = "rectangle" | "rounded_rectangle" | "ellipse" | "diamond" | "sticky";
+export type BoardNodeType = "box" | "shape" | "text";
+export type BoardEdgeType = "arrow" | "line";
+export interface BoardNode { id: string; type: BoardNodeType; x: number; y: number; width: number; height: number; text: string; color: string; shape: BoardShape }
 export interface BoardEdge { id: string; fromNodeId: string; toNodeId: string; label?: string; type: "arrow" | "line" }
 export interface BoardData { nodes: BoardNode[]; edges: BoardEdge[]; viewport: { x: number; y: number; zoom: number } }
 export interface VisualBoard {
