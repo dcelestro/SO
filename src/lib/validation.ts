@@ -89,7 +89,7 @@ export const ideaSchema = z.object({
   complexity: z.enum(["high", "medium", "low"]).optional().nullable(),
   origin: z.enum(["saas", "thirdparty", "personal"]).default("personal"),
   destination: z.string().optional().nullable(),
-  status: z.enum(["inbox", "archived", "promoted"]).default("personal").or(z.enum(["inbox", "archived", "promoted"]).default("inbox")),
+  status: z.enum(["inbox", "archived", "promoted"]).default("inbox"),
   reviewDate: optionalDate,
   notes: z.string().optional().nullable(),
 }).passthrough();
