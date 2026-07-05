@@ -3,15 +3,43 @@
 import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
 import { updateTask } from "@/actions/tasks";
-import { ClipboardList, Inbox, LayoutGrid, List, ChartNoAxesGantt } from "lucide-react";
+import {
+  ChartNoAxesGantt,
+  ClipboardList,
+  Inbox,
+  LayoutGrid,
+  List,
+} from "lucide-react";
 import { useAppData as useData } from "@/components/use-app-data";
-import { Empty, fmt, Header, labels, Status, days, TextWithLinks, TaskLine } from "@/components/workspace";
+import {
+  Empty,
+  fmt,
+  Header,
+  labels,
+  Status,
+  days,
+  TextWithLinks,
+} from "@/components/workspace";
+import { DueDateBadge, SemanticBadge } from "@/components/visual-hierarchy";
+import { TaskActionMenu } from "@/components/tasks/task-action-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs } from "@/components/ui/tabs";
 
-export function TasksView({ initialTasks, initialTab = "today" }: { initialTasks: any[], initialTab?: string }) {
+export function TasksView({
+  initialTasks,
+  initialTab = "today",
+}: {
+  initialTasks: any[];
+  initialTab?: string;
+}) {
   if (initialTab === "gant") {
     return <TasksGant initialTasks={initialTasks} />;
   }
@@ -19,47 +47,74 @@ export function TasksView({ initialTasks, initialTab = "today" }: { initialTasks
   return <Tasks initialTasks={initialTasks} initialTab={initialTab} />;
 }
 
-function Tasks({ initialTasks, initialTab }: { initialTasks: any[], initialTab: string }) {
+function Tasks({ initialTasks, initialTab }: { initialTasks: any[]; initialTab: string }) {
   const [tasks, setTasks] = useState(initialTasks);
-  const { data } = useData(); // Needed for focus, etc, though maybe not directly here but inside TaskLine
+  const { data } = useData();
   const [tab, setTab] = useState(initialTab);
   const [dragTaskId, setDragTaskId] = useState<string | null>(null);
   const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
   const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
   const [kanbanMessage, setKanbanMessage] = useState("");
   const dragOverStatusRef = useRef<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   const filtered =
     tab === "today"
       ? tasks.filter(
-          (t) =>
-            t.isToday || t.isCritical || (t.dueDate && days(t.dueDate) <= 0),
+          (task) =>
+            task.isToday ||
+            task.isCritical ||
+            (task.dueDate && days(task.dueDate) <= 0),
         )
       : tab === "inbox"
-        ? tasks.filter((t) => t.status === "inbox")
+        ? tasks.filter((task) => task.status === "inbox")
         : tasks;
-  
+
   const columns = ["pending", "in_progress", "blocked", "completed"];
 
-  const [isPending, startTransition] = useTransition();
-
-  function moveTask(taskId: string, status: string) {
-    setKanbanMessage("");
-    const prevTasks = [...tasks];
+  function mergeTask(updatedTask: any) {
     setTasks((prev) =>
-      prev.map((task) => (task.id === taskId ? { ...task, status } : task))
+      prev.map((task) =>
+        task.id === updatedTask.id
+          ? {
+              ...task,
+              ...updatedTask,
+              project: updatedTask.project ?? task.project,
+            }
+          : task,
+      ),
     );
+  }
+
+  function removeTask(taskId: string) {
+    setTasks((prev) => prev.filter((task) => task.id !== taskId));
+  }
+
+  function updateTaskStatus(task: any, status: string) {
+    setKanbanMessage("");
+    const previousTasks = tasks;
+    const optimisticTask = { ...task, status };
+
+    mergeTask(optimisticTask);
+
     startTransition(async () => {
       try {
-        const updated = await updateTask(taskId, { status });
-        setTasks((prev) =>
-          prev.map((task) => (task.id === taskId ? { ...task, ...updated } : task))
-        );
+        const updated = await updateTask(task.id, { status });
+        mergeTask(updated);
       } catch (error) {
-        setKanbanMessage(error instanceof Error ? error.message : "No se pudo guardar el estado.");
-        setTasks(prevTasks); // revertir optimista
+        setKanbanMessage(
+          error instanceof Error ? error.message : "No se pudo guardar el estado.",
+        );
+        setTasks(previousTasks);
       }
     });
+  }
+
+  function moveTask(taskId: string, status: string) {
+    const task = tasks.find((item) => item.id === taskId);
+    if (!task) return;
+
+    updateTaskStatus(task, status);
     setDragTaskId(null);
     setDragOverStatus(null);
     dragOverStatusRef.current = null;
@@ -79,15 +134,19 @@ function Tasks({ initialTasks, initialTab }: { initialTasks: any[], initialTab: 
   }
 
   function startDrag(taskId: string, status: string, event: React.PointerEvent<HTMLElement>) {
+    if ((event.target as HTMLElement).closest("[data-task-actions]")) return;
+
     event.preventDefault();
     setDragTaskId(taskId);
     setDropStatus(status);
     setDragPosition({ x: event.clientX, y: event.clientY });
+
     const onMove = (moveEvent: PointerEvent) => {
       setDragPosition({ x: moveEvent.clientX, y: moveEvent.clientY });
       const nextStatus = statusFromPoint(moveEvent.clientX, moveEvent.clientY);
       if (nextStatus) setDropStatus(nextStatus);
     };
+
     const onUp = (upEvent: PointerEvent) => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
@@ -97,6 +156,7 @@ function Tasks({ initialTasks, initialTab }: { initialTasks: any[], initialTab: 
         status;
       moveTask(taskId, finalStatus);
     };
+
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp, { once: true });
   }
@@ -113,8 +173,24 @@ function Tasks({ initialTasks, initialTab }: { initialTasks: any[], initialTab: 
         {tab !== "kanban" ? (
           <Card className="mt-4">
             <CardContent className="pt-4">
+              {kanbanMessage ? (
+                <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {kanbanMessage}
+                </div>
+              ) : null}
               {filtered.length ? (
-                filtered.map((t) => <TaskLine key={t.id} task={t} />)
+                <div className="space-y-2">
+                  {filtered.map((task) => (
+                    <TaskListItem
+                      key={task.id}
+                      task={task}
+                      data={data}
+                      onStatusChange={updateTaskStatus}
+                      onUpdated={mergeTask}
+                      onDeleted={removeTask}
+                    />
+                  ))}
+                </div>
               ) : (
                 <Empty text="No hay tareas en esta vista." />
               )}
@@ -127,49 +203,62 @@ function Tasks({ initialTasks, initialTab }: { initialTasks: any[], initialTab: 
                 {kanbanMessage}
               </div>
             ) : null}
-            {columns.map((c) => (
+            {columns.map((column) => (
               <div
-                key={c}
-                data-kanban-status={c}
-                onPointerEnter={() => dragTaskId && setDropStatus(c)}
+                key={column}
+                data-kanban-status={column}
+                onPointerEnter={() => dragTaskId && setDropStatus(column)}
                 className={`rounded-xl p-3 transition ${
-                  dragOverStatus === c
+                  dragOverStatus === column
                     ? "bg-blue-50 ring-2 ring-blue-300"
                     : "bg-slate-100"
                 }`}
               >
                 <div className="mb-3 flex items-center justify-between">
-                  <p className="text-sm font-semibold">{labels[c]}</p>
+                  <p className="text-sm font-semibold">{labels[column]}</p>
                   <Badge variant="secondary">
-                    {tasks.filter((t) => t.status === c).length}
+                    {tasks.filter((task) => task.status === column).length}
                   </Badge>
                 </div>
                 <div className="space-y-2">
                   {tasks
-                    .filter((t) => t.status === c)
-                    .map((t) => (
+                    .filter((task) => task.status === column)
+                    .map((task) => (
                       <Card
-                        key={t.id}
-                        onPointerDown={(event) => startDrag(t.id, c, event)}
+                        key={task.id}
+                        onPointerDown={(event) => startDrag(task.id, column, event)}
                         onPointerCancel={() => {
                           setDragTaskId(null);
                           setDropStatus(null);
                           setDragPosition(null);
                         }}
                         className={`cursor-grab touch-none select-none transition active:cursor-grabbing ${
-                          dragTaskId === t.id
+                          dragTaskId === task.id
                             ? "scale-[0.98] border-slate-300 opacity-45"
                             : ""
                         }`}
                       >
-                        <CardContent className="p-3">
-                          <p className="text-sm font-medium">
-                            <TextWithLinks value={t.title} />
-                          </p>
-                          <p className="my-2 text-xs text-slate-500">
-                            {t.project?.name || "Inbox"}
-                          </p>
-                          <Status value={t.priority} />
+                        <CardContent className="relative p-3 group">
+                          <div
+                            data-task-actions
+                            onPointerDown={(event) => event.stopPropagation()}
+                            className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100"
+                          >
+                            <TaskActionMenu
+                              task={task as any}
+                              onUpdated={mergeTask}
+                              onDeleted={removeTask}
+                            />
+                          </div>
+                          <div className="pr-8">
+                            <p className="text-sm font-medium">
+                              <TextWithLinks value={task.title} />
+                            </p>
+                            <p className="my-2 text-xs text-slate-500">
+                              {task.project?.name || "Inbox"}
+                            </p>
+                            <Status value={task.priority} />
+                          </div>
                         </CardContent>
                       </Card>
                     ))}
@@ -191,6 +280,113 @@ function Tasks({ initialTasks, initialTab }: { initialTasks: any[], initialTab: 
         )}
       </Tabs>
     </>
+  );
+}
+
+function TaskListItem({
+  task,
+  data,
+  onStatusChange,
+  onUpdated,
+  onDeleted,
+}: {
+  task: any;
+  data: any;
+  onStatusChange: (task: any, status: string) => void;
+  onUpdated: (task: any) => void;
+  onDeleted: (taskId: string) => void;
+}) {
+  const project = task.project || data.projects.find((item: any) => item.id === task.projectId);
+  const isMainFocus = task.projectId === data.focus?.mainProjectId;
+  const isAvoided = (data.focus?.avoidProjectIds || []).includes(task.projectId || "");
+  const isOverdue = Boolean(
+    task.dueDate && days(task.dueDate) < 0 && task.status !== "completed",
+  );
+
+  const reason = isOverdue
+    ? "Vencida: necesita resolución o una nueva fecha"
+    : isMainFocus
+      ? "Pertenece al foco principal de esta semana"
+      : task.status === "blocked"
+        ? "Está bloqueando el avance del proyecto"
+        : isAvoided
+          ? "Advertencia: este proyecto está marcado como no tocar"
+          : task.priority === "critical"
+            ? "Prioridad crítica"
+            : task.status === "inbox"
+              ? "Captura pendiente de procesar"
+              : "Trabajo operativo pendiente";
+
+  const toneClass =
+    task.status === "completed"
+      ? "border-l-emerald-500 bg-emerald-50/60"
+      : isOverdue || task.status === "blocked"
+        ? "border-l-red-500 bg-red-50/70"
+        : isMainFocus
+          ? "border-l-blue-600 bg-blue-50/70"
+          : task.priority === "critical" || task.priority === "high"
+            ? "border-l-orange-500 bg-orange-50/60"
+            : isAvoided
+              ? "border-l-amber-400 bg-amber-50/50"
+              : "border-l-slate-200 bg-white";
+
+  return (
+    <div
+      className={`group flex flex-col gap-3 rounded-lg border border-l-4 border-y-slate-200 border-r-slate-200 px-3 py-3 transition hover:shadow-sm sm:flex-row sm:items-center ${toneClass}`}
+    >
+      <button
+        onClick={() => onStatusChange(task, "completed")}
+        className="mt-0.5 size-5 shrink-0 rounded-full border-2 border-slate-300 bg-white hover:border-emerald-500 sm:mt-0"
+        aria-label="Completar tarea"
+      />
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="truncate text-sm font-semibold text-slate-950">
+            <TextWithLinks value={task.title} />
+          </p>
+          {isMainFocus ? <SemanticBadge value="focus" label="Foco principal" /> : null}
+          {isAvoided ? <SemanticBadge value="avoid" label="Fuera de foco" /> : null}
+          {isOverdue ? <SemanticBadge value="overdue" label="Vencida" /> : null}
+        </div>
+        <p className="mt-1 truncate text-xs text-slate-500">
+          {project?.name || "Inbox"} · {reason}
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <Status value={task.priority} />
+        {task.dueDate ? (
+          <DueDateBadge
+            days={days(task.dueDate)}
+            done={task.status === "completed"}
+          />
+        ) : null}
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() =>
+            onStatusChange(
+              task,
+              task.status === "in_progress" ? "completed" : "in_progress",
+            )
+          }
+        >
+          {task.status === "in_progress" ? "Completar" : "Iniciar"}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-slate-500"
+          onClick={() => onStatusChange(task, "waiting")}
+        >
+          Posponer
+        </Button>
+        <TaskActionMenu
+          task={task as any}
+          onUpdated={onUpdated}
+          onDeleted={onDeleted}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -239,7 +435,7 @@ function TasksGant({ initialTasks }: { initialTasks: any[] }) {
   const datedTasks = initialTasks
     .filter((task) => task.dueDate && !["completed", "discarded"].includes(task.status))
     .sort((a, b) => days(a.dueDate!) - days(b.dueDate!));
-  
+
   const windowDays = Array.from({ length: 15 }, (_, index) => index - 3);
   return (
     <>
