@@ -2,7 +2,7 @@
 
 import { getPrisma } from "@/lib/prisma";
 import { requireActionSession } from "@/actions/auth";
-import { normalizeDates, projectSchema } from "@/lib/validation";
+import { normalizeDates, projectSchema, projectUpdateSchema } from "@/lib/validation";
 
 export async function getProjects() {
   await requireActionSession();
@@ -31,7 +31,7 @@ export async function createProject(payload: unknown) {
 export async function updateProject(id: string, payload: unknown) {
   await requireActionSession();
 
-  const result = projectSchema.partial().safeParse(payload);
+  const result = projectUpdateSchema.safeParse(payload);
   if (!result.success) {
     throw new Error(result.error.issues[0]?.message || "Datos de proyecto inválidos.");
   }
