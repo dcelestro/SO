@@ -20,7 +20,7 @@ export const moduleSchema = z.object({
   blockedReason: z.string().trim().optional().nullable(),
 }).passthrough();
 
-export const projectSchema = z.object({
+const projectBaseSchema = z.object({
   name: z.string().trim().min(2),
   areaId: z.string().min(1),
   status: z.enum(["idea", "analysis", "active", "paused", "blocked", "completed", "discarded", "frozen"]),
@@ -33,11 +33,15 @@ export const projectSchema = z.object({
   progressPercentage: z.number().min(0).max(100).optional(),
   targetDate: optionalDate,
   frozenUntil: optionalDate,
-}).passthrough().superRefine((value, ctx) => {
+}).passthrough();
+
+export const projectSchema = projectBaseSchema.superRefine((value, ctx) => {
   if (value.status === "active" && !value.nextAction) {
     ctx.addIssue({ code:"custom", path:["nextAction"], message:"Todo proyecto activo debe tener una próxima acción concreta." });
   }
 });
+
+export const projectUpdateSchema = projectBaseSchema.partial();
 
 export const taskSchema = z.object({ title:z.string().trim().min(2), status:z.enum(["inbox","pending","in_progress","waiting","blocked","completed","discarded"]).default("inbox"), priority:z.enum(["critical","high","medium","low"]).default("medium"), projectId:z.string().optional().nullable(), areaId:z.string().optional().nullable(), dueDate:optionalDate }).passthrough();
 export function normalizeDates<T extends Record<string, unknown>>(data:T) { const out={...data}; for (const [key,value] of Object.entries(out)) if ((key.endsWith("Date") || key.endsWith("At") || key === "frozenUntil") && typeof value === "string") (out as Record<string,unknown>)[key]=value ? new Date(value) : null; return out; }
