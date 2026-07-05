@@ -143,62 +143,6 @@ enum IdeaStatus {
   promoted
 }
 
-enum DueItemType {
-  domain
-  hosting
-  subscription
-  license
-  api
-  payment
-  backup
-  ssl
-  tax
-  review
-  other
-}
-
-enum DueItemStatus {
-  pending
-  done
-  overdue
-  cancelled
-}
-
-enum RecurrenceType {
-  none
-  weekly
-  monthly
-  quarterly
-  yearly
-  custom
-}
-
-enum ReviewType {
-  weekly_review
-  monthly_review
-  project_review
-  backup_review
-  financial_review
-  content_review
-  system_review
-  other
-}
-
-enum Frequency {
-  weekly
-  monthly
-  quarterly
-  yearly
-  custom
-}
-
-enum ReviewStatus {
-  pending
-  done
-  overdue
-  cancelled
-}
-
 enum DocumentType {
   specification
   brief
@@ -235,31 +179,6 @@ enum ResourceStatus {
   inactive
   pending
   expired
-  cancelled
-}
-
-enum DecisionStatus {
-  active
-  revised
-  discarded
-}
-
-enum ImportantDateType {
-  deadline
-  milestone
-  launch
-  review
-  renewal
-  payment
-  meeting
-  delivery
-  other
-}
-
-enum DateStatus {
-  pending
-  done
-  overdue
   cancelled
 }
 
@@ -314,17 +233,6 @@ enum FocusScopeType {
   module
 }
 
-enum ShortcutType {
-  system
-  area
-  project
-  module
-  resource
-  inbox
-  alerts
-  custom
-}
-
 enum BoardType {
   whiteboard
   flowchart
@@ -337,6 +245,35 @@ enum BoardType {
 
 enum BoardStatus {
   draft
+  active
+  archived
+}
+
+enum LibraryItemType {
+  prompt
+  document_template
+  client_message
+  checklist
+  dev_issue
+  functional_spec
+  technical_spec
+  report
+  email
+  other
+}
+
+enum LibraryItemCategory {
+  desarrollo
+  documentacion
+  clientes
+  comercial
+  testing
+  operacion
+  prompts
+  otros
+}
+
+enum LibraryItemStatus {
   active
   archived
 }
@@ -361,13 +298,10 @@ model Area {
   tasks       Task[]
   assets      DigitalAsset[]
   ideas       Idea[]
-  reviews     Review[]
   notes       Note[]
   documents   Document[]
   credentials Credential[]
   resources   Resource[]
-  decisions   Decision[]
-  dates       ImportantDate[]
   alerts      Alert[]
   activities  ActivityLog[]
   boards      Board[]
@@ -397,9 +331,7 @@ model Project {
   modules            ProjectModule[]
   tasks              Task[]
   assets             DigitalAsset[]
-  dueItems           DueItem[]
   ideas              Idea[]
-  reviews            Review[]
   notes              Note[]
   mainWeeklyFocuses  WeeklyFocus[]
   secondaryFocuses   WeeklyFocusSecondaryProject[]
@@ -407,8 +339,6 @@ model Project {
   documents          Document[]
   credentials        Credential[]
   resources          Resource[]
-  decisions          Decision[]
-  dates              ImportantDate[]
   alerts             Alert[]
   activities         ActivityLog[]
   boards             Board[]
@@ -438,8 +368,6 @@ model ProjectModule {
   documents          Document[]
   credentials        Credential[]
   resources          Resource[]
-  decisions          Decision[]
-  dates              ImportantDate[]
   alerts             Alert[]
   activities         ActivityLog[]
   boards             Board[]
@@ -495,7 +423,6 @@ model DigitalAsset {
   cost                     Decimal?    @db.Decimal(12, 2)
   currency                 String?
   status                   AssetStatus @default(active)
-  dueItems                 DueItem[]
   createdAt                DateTime    @default(now())
   updatedAt                DateTime    @updatedAt
 
@@ -521,48 +448,6 @@ model Idea {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  @@index([areaId, projectId])
-}
-
-model DueItem {
-  id           String         @id @default(cuid())
-  title        String
-  description  String?
-  projectId    String?
-  project      Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  assetId      String?
-  asset        DigitalAsset?  @relation(fields: [assetId], references: [id], onDelete: SetNull)
-  type         DueItemType
-  dueDate      DateTime
-  reminderDate DateTime?
-  recurrence   RecurrenceType @default(none)
-  status       DueItemStatus  @default(pending)
-  amount       Decimal?       @db.Decimal(12, 2)
-  currency     String?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-
-  @@index([dueDate, status])
-  @@index([projectId, assetId])
-}
-
-model Review {
-  id             String       @id @default(cuid())
-  title          String
-  description    String?
-  projectId      String?
-  project        Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  areaId         String?
-  area           Area?        @relation(fields: [areaId], references: [id], onDelete: SetNull)
-  type           ReviewType
-  frequency      Frequency
-  nextReviewDate DateTime
-  lastReviewDate DateTime?
-  status         ReviewStatus @default(pending)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  @@index([nextReviewDate, status])
   @@index([areaId, projectId])
 }
 
@@ -624,69 +509,28 @@ model Credential {
 }
 
 model Resource {
-  id          String         @id @default(cuid())
-  name        String
-  areaId      String
-  area        Area           @relation(fields: [areaId], references: [id], onDelete: Cascade)
-  projectId   String?
-  project     Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  moduleId    String?
-  module      ProjectModule? @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  type        ResourceType   @default(other)
-  provider    String?
-  url         String?
-  notes       String?
-  renewalDate DateTime?
-  status      ResourceStatus @default(active)
+  id                     String         @id @default(cuid())
+  name                   String
+  areaId                 String
+  area                   Area           @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  projectId              String?
+  project                Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  moduleId               String?
+  module                 ProjectModule? @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  type                   ResourceType   @default(other)
+  provider               String?
+  url                    String?
+  notes                  String?
+  renewalDate            DateTime?
+  status                 ResourceStatus @default(active)
   credentialProvider     String?
   credentialReference    String?
   credentialLabel        String?
   credentialUsernameHint String?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
 
   @@index([areaId, projectId, moduleId])
-}
-
-model Decision {
-  id           String         @id @default(cuid())
-  title        String
-  description  String?
-  areaId       String
-  area         Area           @relation(fields: [areaId], references: [id], onDelete: Cascade)
-  projectId    String?
-  project      Project?       @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  moduleId     String?
-  module       ProjectModule? @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  reason       String?
-  consequences String?
-  status       DecisionStatus @default(active)
-  decidedAt    DateTime?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-
-  @@index([areaId, projectId, moduleId])
-}
-
-model ImportantDate {
-  id           String            @id @default(cuid())
-  title        String
-  description  String?
-  areaId       String
-  area         Area              @relation(fields: [areaId], references: [id], onDelete: Cascade)
-  projectId    String?
-  project      Project?          @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  moduleId     String?
-  module       ProjectModule?    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  type         ImportantDateType @default(other)
-  date         DateTime
-  reminderDate DateTime?
-  status       DateStatus        @default(pending)
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-
-  @@index([areaId, projectId, moduleId])
-  @@index([status, date])
 }
 
 model Alert {
@@ -780,24 +624,6 @@ model ActivityLog {
   @@index([createdAt])
 }
 
-model DesktopShortcut {
-  id           String       @id @default(cuid())
-  name         String
-  description  String?
-  type         ShortcutType @default(custom)
-  icon         String?
-  color        String?
-  targetType   String?
-  targetId     String?
-  sortOrder    Int          @default(0)
-  isPinned     Boolean      @default(false)
-  lastOpenedAt DateTime?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-
-  @@index([sortOrder, isPinned])
-}
-
 model Board {
   id          String         @id @default(cuid())
   title       String
@@ -819,46 +645,19 @@ model Board {
   @@index([status, updatedAt])
 }
 
-enum LibraryItemType {
-  prompt
-  document_template
-  client_message
-  checklist
-  dev_issue
-  functional_spec
-  technical_spec
-  report
-  email
-  other
-}
-
-enum LibraryItemStatus {
-  draft
-  active
-  archived
-}
-
-enum LibraryItemCategory {
-  desarrollo
-  documentacion
-  clientes
-  comercial
-  testing
-  operacion
-  prompts
-  otros
-}
-
 model LibraryItem {
   id          String              @id @default(cuid())
   title       String
   description String
   type        LibraryItemType
   category    LibraryItemCategory
-  tags        String[]
-  content     String              @db.Text
-  variables   String[]
+  tags        String[]            @default([])
+  content     String
+  variables   String[]            @default([])
   status      LibraryItemStatus   @default(active)
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
+
+  @@index([type, category, status])
+  @@index([updatedAt])
 }
