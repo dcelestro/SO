@@ -82,18 +82,9 @@ const groups: NavGroup[] = [
     ],
   },
   {
-    label: "Biblioteca",
-    items: [
-      {
-        href: "/library",
-        label: "Biblioteca",
-        Icon: Library,
-      },
-    ],
-  },
-  {
     label: "Recursos",
     items: [
+      { href: "/library", label: "Biblioteca", Icon: Library },
       { href: "/assets", label: "Activos", Icon: ShieldCheck },
       { href: "/boards", label: "Pizarras y diagramas", Icon: Network },
     ],
