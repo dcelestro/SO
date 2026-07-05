@@ -3,7 +3,6 @@ import {
   ProjectMaturity,
   ProjectStatus,
   ProjectType,
-  ShortcutType,
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
@@ -47,16 +46,12 @@ async function clearDatabase() {
   await db.weeklyFocusSecondaryProject.deleteMany();
   await db.weeklyFocusAvoidProject.deleteMany();
   await db.weeklyFocus.deleteMany();
-  await db.review.deleteMany();
-  await db.dueItem.deleteMany();
+  await db.libraryItem.deleteMany();
   await db.idea.deleteMany();
   await db.digitalAsset.deleteMany();
   await db.board.deleteMany();
-  await db.desktopShortcut.deleteMany();
   await db.inboxItem.deleteMany();
   await db.alert.deleteMany();
-  await db.importantDate.deleteMany();
-  await db.decision.deleteMany();
   await db.resource.deleteMany();
   await db.credential.deleteMany();
   await db.document.deleteMany();
@@ -168,7 +163,7 @@ async function main() {
     ],
   });
 
-  const asset = await db.digitalAsset.create({
+  await db.digitalAsset.create({
     data: {
       name: "Dominio abundia.app",
       areaId: abundia.id,
@@ -183,14 +178,6 @@ async function main() {
       currency: "USD",
       status: "active",
     },
-  });
-
-  await db.dueItem.createMany({
-    data: [
-      { title: "Renovar dominio abundia.app", projectId: agenda.id, assetId: asset.id, type: "domain", dueDate: day(18), reminderDate: day(11), recurrence: "yearly", status: "pending", amount: 18, currency: "USD" },
-      { title: "Backup del servidor", projectId: personalServer.id, type: "backup", dueDate: day(-1), recurrence: "monthly", status: "pending" },
-      { title: "Licencia de diseño", projectId: ecommerceProject.id, type: "license", dueDate: day(6), recurrence: "monthly", status: "pending", amount: 15, currency: "USD" },
-    ],
   });
 
   await db.resource.createMany({
@@ -230,22 +217,13 @@ async function main() {
 
   await db.idea.createMany({
     data: [
-      { title: "Biblioteca de decisiones", description: "Registrar por qué se eligió cada camino.", areaId: apps.id, potential: "high", complexity: "medium", status: "inbox", reviewDate: day(14) },
-      { title: "Radar de costos SaaS", areaId: areas.get("Administración")!.id, potential: "medium", complexity: "low", status: "inbox", reviewDate: day(21) },
-    ],
-  });
-
-  await db.review.createMany({
-    data: [
-      { title: "Revisión semanal de foco", type: "weekly_review", frequency: "weekly", nextReviewDate: day(2), status: "pending" },
-      { title: "Revisión de backups", projectId: personalServer.id, areaId: infrastructure.id, type: "backup_review", frequency: "monthly", nextReviewDate: day(-3), status: "pending" },
+      { title: "Registro de aprendizajes técnicos", description: "Capturar aprendizajes útiles para no repetir errores.", areaId: apps.id, potential: "high", complexity: "medium", status: "inbox", reviewDate: day(14) },
+      { title: "Radar de costos de herramientas", areaId: areas.get("Administración")!.id, potential: "medium", complexity: "low", status: "inbox", reviewDate: day(21) },
     ],
   });
 
   await db.document.create({ data: { title: "Alcance inicial", areaId: abundia.id, projectId: agenda.id, type: "specification" } });
   await db.credential.create({ data: { name: "Cuenta de desarrollo", areaId: abundia.id, projectId: agenda.id, serviceName: "Nexo local" } });
-  await db.decision.create({ data: { title: "Mantener arquitectura jerárquica V2", areaId: abundia.id, projectId: agenda.id, decidedAt: new Date() } });
-  await db.importantDate.create({ data: { title: "Revisión del alcance", areaId: abundia.id, projectId: agenda.id, type: "review", date: day(7) } });
   await db.alert.create({ data: { title: "Revisar próxima acción", areaId: abundia.id, projectId: agenda.id, type: "manual", severity: "low" } });
   await db.inboxItem.create({ data: { title: "Procesar notas iniciales" } });
 
@@ -269,88 +247,45 @@ async function main() {
     },
   });
 
-
-  await db.libraryItem.deleteMany();
   await db.libraryItem.createMany({
     data: [
       {
         title: "Prompt: Auditoría técnica de repositorio",
-        description: "Útil para cuando te pasan un repositorio nuevo y necesitás entender rápido de qué va, stack, y detectar red flags.",
+        description: "Útil para entender rápido un repositorio nuevo y detectar riesgos.",
         type: "prompt",
         category: "desarrollo",
         tags: ["auditoria", "onboarding", "tech-lead"],
         variables: ["{{repo_url}}"],
-        content: "Actúa como un Tech Lead Senior.\nAnaliza el siguiente repositorio: {{repo_url}}\n\nQuiero que me devuelvas un reporte con:\n1. Stack tecnológico detectado y patrones arquitectónicos.\n2. Red flags o malas prácticas evidentes (ej. credenciales hardcodeadas, dependencias vulnerables).\n3. Complejidad de la base de código y deuda técnica estimada.\n4. Top 3 cosas a mejorar urgentemente.\n\nSé directo y técnico."
-      },
-      {
-        title: "Prompt: Crear issue/tarea para Dev",
-        description: "Genera una tarea accionable para pasarle a un desarrollador, a partir de un requerimiento ambiguo.",
-        type: "prompt",
-        category: "prompts",
-        tags: ["agile", "issues", "pm"],
-        variables: ["{{requerimiento}}"],
-        content: "Convertí el siguiente requerimiento ambiguo en una tarea (issue) lista para que un desarrollador la tome y programe:\n\nRequerimiento: {{requerimiento}}\n\nDevolveme:\n- Título descriptivo\n- Contexto breve\n- Criterios de aceptación claros (viñetas)\n- Consideraciones técnicas o notas (opcional)"
+        content: "Actúa como un Tech Lead Senior. Analiza el siguiente repositorio: {{repo_url}}. Devolvé stack, red flags, deuda técnica y top 3 mejoras urgentes.",
       },
       {
         title: "Modelo de Especificación Funcional",
-        description: "Plantilla para describir una nueva feature antes de programarla.",
+        description: "Plantilla para describir una feature antes de programarla.",
         type: "functional_spec",
         category: "documentacion",
         tags: ["specs", "producto"],
         variables: ["{{feature_name}}", "{{objetivo}}", "{{restricciones}}"],
-        content: "# Especificación Funcional: {{feature_name}}\n\n## 1. Objetivo\n{{objetivo}}\n\n## 2. Casos de Uso\n- [ ] Como usuario quiero... para...\n- [ ] Como admin quiero... para...\n\n## 3. Restricciones y Supuestos\n{{restricciones}}\n\n## 4. Fuera del Alcance (Out of scope)\n- ...\n\n## 5. Diseño de Interfaz / Wireframes\n(Pegar links acá)"
-      },
-      {
-        title: "Mensaje a cliente: Avance semanal",
-        description: "Plantilla para enviar reporte de status semanal de forma profesional y transparente.",
-        type: "client_message",
-        category: "clientes",
-        tags: ["comunicacion", "status"],
-        variables: ["{{cliente}}", "{{logros}}", "{{siguientes_pasos}}", "{{bloqueos}}"],
-        content: "Hola {{cliente}}, ¿cómo estás?\n\nTe escribo para dejarte el reporte de avances de esta semana en el proyecto.\n\n✅ **Lo que completamos:**\n{{logros}}\n\n🔜 **Próximos pasos (semana que viene):**\n{{siguientes_pasos}}\n\n⚠️ **Dudas o bloqueos:**\n{{bloqueos}}\n\nCualquier duda, avisame y lo revisamos.\n¡Buen fin de semana!"
+        content: "# Especificación Funcional: {{feature_name}}\n\n## Objetivo\n{{objetivo}}\n\n## Restricciones\n{{restricciones}}",
       },
       {
         title: "Checklist: Revisión antes de entregar feature",
-        description: "Pasos mínimos antes de dar por cerrada una funcionalidad y pasarla a QA o Prod.",
+        description: "Pasos mínimos antes de cerrar una funcionalidad.",
         type: "checklist",
         category: "testing",
         tags: ["qa", "checklist"],
         variables: [],
-        content: "- [ ] El código compila sin errores (ej. `tsc --noEmit`).\n- [ ] La consola del navegador no tira errores rojos.\n- [ ] Probado en Mobile y Desktop.\n- [ ] Funciona el 'happy path'.\n- [ ] Funciona cuando el usuario hace cosas inesperadas (manejo de errores).\n- [ ] El código viejo no se rompió (regression check).\n- [ ] Se removieron los console.log o prints de debug.\n- [ ] No hay credenciales ({{API_KEY}}) harcodeadas en texto plano."
+        content: "- [ ] Compila sin errores\n- [ ] No hay errores rojos en consola\n- [ ] Probado en desktop y mobile\n- [ ] Sin credenciales hardcodeadas",
       },
-      {
-        title: "Modelo de Reporte de Bugs",
-        description: "Estructura para reportar un bug de manera que el dev pueda reproducirlo.",
-        type: "report",
-        category: "testing",
-        tags: ["bugs", "qa"],
-        variables: ["{{titulo}}", "{{entorno}}"],
-        content: "## Bug: {{titulo}}\n\n**Entorno:** {{entorno}} (ej. Prod, Staging, Chrome Mac)\n\n**Pasos para reproducir:**\n1. Entrar a...\n2. Hacer clic en...\n3. Escribir...\n\n**Comportamiento esperado:**\nDebería pasar X.\n\n**Comportamiento actual (Error):**\nEstá pasando Y.\n\n**Evidencia:**\n(Pegar URL de video o screenshot)"
-      }
-    ]
-  });
-
-  await db.desktopShortcut.createMany({
-    data: [
-      { name: "Explorador", type: ShortcutType.system, targetType: "explorer", icon: "FolderTree", color: "#475569", sortOrder: 0, isPinned: true },
-      { name: "Abundia", type: ShortcutType.area, targetType: "area", targetId: abundia.id, icon: "Building2", color: "#2563eb", sortOrder: 1, isPinned: true },
-      { name: "Ecommerce", type: ShortcutType.area, targetType: "area", targetId: ecommerce.id, icon: "ShoppingBag", color: "#059669", sortOrder: 2, isPinned: true },
-      { name: "Newsletter", type: ShortcutType.area, targetType: "area", targetId: newsletter.id, icon: "Mail", color: "#7c3aed", sortOrder: 3, isPinned: true },
-    ],
-  });
-
-  await db.activityLog.createMany({
-    data: [
-      { areaId: abundia.id, projectId: agenda.id, moduleId: calendario.id, entityType: "Task", entityId: calendario.id, action: "task.created", description: "Tareas iniciales de Calendario" },
-      { areaId: apps.id, projectId: nexo.id, moduleId: nexoSecurity.id, entityType: "Board", entityId: nexoSecurity.id, action: "board.created", description: "Arquitectura Nexo + La Caja" },
-      { areaId: infrastructure.id, projectId: personalServer.id, entityType: "Project", entityId: personalServer.id, action: "seeded", description: "Datos jerárquicos iniciales creados" },
     ],
   });
 }
 
 main()
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
+  .then(async () => {
+    await db.$disconnect();
   })
-  .finally(() => db.$disconnect());
+  .catch(async (error) => {
+    console.error(error);
+    await db.$disconnect();
+    process.exit(1);
+  });
