@@ -48,10 +48,15 @@ export function ProjectActionMenu({
   const [freezeOpen, setFreezeOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const isFrozen = project.status === "frozen" || project.isFrozen;
+  const usesExternalEditDialog = Boolean(onEditOpenChange);
 
   function setEditDialogOpen(open: boolean) {
+    if (usesExternalEditDialog) {
+      onEditOpenChange?.(open);
+      return;
+    }
+
     setEditOpen(open);
-    onEditOpenChange?.(open);
   }
 
   function mutateProject(payload: Record<string, unknown>, afterUpdate?: (updatedProject: any) => void) {
@@ -150,13 +155,15 @@ export function ProjectActionMenu({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <ProjectFormModal
-        open={editOpen}
-        onOpenChange={setEditDialogOpen}
-        project={project}
-        areas={areas}
-        onSaved={(savedProject) => onUpdated?.(savedProject)}
-      />
+      {!usesExternalEditDialog ? (
+        <ProjectFormModal
+          open={editOpen}
+          onOpenChange={setEditDialogOpen}
+          project={project}
+          areas={areas}
+          onSaved={(savedProject) => onUpdated?.(savedProject)}
+        />
+      ) : null}
 
       <AlertDialog open={freezeOpen} onOpenChange={setFreezeOpen}>
         <AlertDialogContent>
