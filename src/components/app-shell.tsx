@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
@@ -15,7 +15,6 @@ import {
   Inbox,
   Library,
   Lightbulb,
-  LayoutGrid,
   Menu,
   Network,
   Plus,
@@ -65,7 +64,6 @@ const groups: NavGroup[] = [
     label: "Operación",
     items: [
       { href: "/dashboard", label: "Inicio", Icon: Home },
-      { href: "/desktop", label: "Escritorio", Icon: LayoutGrid },
       { href: "/explorer", label: "Explorador", Icon: FolderTree },
       {
         href: "/tasks",
