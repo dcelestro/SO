@@ -70,7 +70,9 @@ export const ideaSchema = z.object({
   projectId: z.string().optional().nullable(),
   potential: z.enum(["high", "medium", "low"]).optional().nullable(),
   complexity: z.enum(["high", "medium", "low"]).optional().nullable(),
-  status: z.enum(["captured", "evaluating", "future", "converted_to_project", "discarded"]).default("captured"),
+  origin: z.enum(["saas", "thirdparty", "personal"]).default("personal"),
+  destination: z.string().optional().nullable(),
+  status: z.enum(["inbox", "archived", "promoted"]).default("inbox"),
   reviewDate: optionalDate,
   notes: z.string().optional().nullable(),
 }).passthrough();
