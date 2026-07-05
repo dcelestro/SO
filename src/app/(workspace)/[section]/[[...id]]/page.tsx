@@ -16,7 +16,6 @@ const sections = new Set([
   "ecosystem",
   "assets",
   "ideas",
-  "due-items",
   "reviews",
   "kpis",
   "freezer",
