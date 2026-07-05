@@ -7,7 +7,6 @@ import {
   BarChart3,
   Bell,
   Boxes,
-  CalendarClock,
   CheckSquare2,
   ChevronDown,
   FolderKanban,
@@ -94,7 +93,6 @@ const groups: NavGroup[] = [
     label: "Gestión",
     items: [
       { href: "/ideas", label: "Ideas", Icon: Lightbulb },
-      { href: "/vencimientos", label: "Vencimientos", Icon: CalendarClock },
       { href: "/reviews", label: "Revisiones", Icon: Activity },
       { href: "/kpis", label: "KPIs", Icon: BarChart3 },
     ],
