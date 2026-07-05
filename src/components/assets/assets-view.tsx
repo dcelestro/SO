@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExternalLink, Plus, Search } from "lucide-react";
+import { ExternalLink, Search } from "lucide-react";
 import { AssetActionMenu } from "@/components/assets/asset-action-menu";
-import { AssetFormModal } from "@/components/assets/asset-form-modal";
 import { Header, fmt, Status } from "@/components/workspace";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -36,7 +34,6 @@ export function AssetsView({
   const [rows, setRows] = useState(assets);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
-  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     setRows(assets);
@@ -55,10 +52,6 @@ export function AssetsView({
           : asset,
       ),
     );
-  }
-
-  function addAsset(asset: any) {
-    setRows((current) => [asset, ...current]);
   }
 
   function removeAsset(assetId: string) {
@@ -91,20 +84,6 @@ export function AssetsView({
       <Header
         title="Activos digitales"
         desc="Dónde está cada recurso importante, sin guardar contraseñas."
-        action={
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="size-4" />
-            Nuevo activo
-          </Button>
-        }
-      />
-
-      <AssetFormModal
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        projects={projects}
-        areas={areas}
-        onSaved={addAsset}
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border bg-white p-3">
