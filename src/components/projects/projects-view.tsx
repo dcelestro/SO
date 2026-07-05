@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FolderKanban, LayoutGrid, List, Search } from "lucide-react";
 import { useAppData as useData } from "@/components/use-app-data";
 import { Header, labels, Status, fmt } from "@/components/workspace";
+import { ProjectActionMenu } from "@/components/projects/project-action-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,14 +36,41 @@ import { SemanticBadge } from "@/components/visual-hierarchy";
 
 export function ProjectsView({ projects }: { projects: any[] }) {
   const { data } = useData();
+  const [projectRows, setProjectRows] = useState(projects);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [view, setView] = useState("table");
 
-  const rows = projects.filter(
+  useEffect(() => {
+    setProjectRows(projects);
+  }, [projects]);
+
+  const areas = data?.areas || [];
+
+  function mergeProject(updatedProject: any) {
+    setProjectRows((prev) =>
+      prev.map((project) =>
+        project.id === updatedProject.id
+          ? {
+              ...project,
+              ...updatedProject,
+              area: updatedProject.area ?? project.area,
+              tasks: updatedProject.tasks ?? project.tasks,
+            }
+          : project,
+      ),
+    );
+  }
+
+  function removeProject(projectId: string) {
+    setProjectRows((prev) => prev.filter((project) => project.id !== projectId));
+  }
+
+  const rows = projectRows.filter(
     (p) =>
+      p.status !== "discarded" &&
       p.name.toLowerCase().includes(search.toLowerCase()) &&
-      (status === "all" || p.status === status)
+      (status === "all" || p.status === status),
   );
 
   return (
@@ -64,9 +92,9 @@ export function ProjectsView({ projects }: { projects: any[] }) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos los estados</SelectItem>
-            {["active", "blocked", "paused", "frozen", "completed"].map((s) => (
+            {["idea", "analysis", "active", "blocked", "paused", "frozen", "completed"].map((s) => (
               <SelectItem key={s} value={s}>
-                {labels[s]}
+                {labels[s] || s}
               </SelectItem>
             ))}
           </SelectContent>
@@ -76,6 +104,7 @@ export function ProjectsView({ projects }: { projects: any[] }) {
             size="icon"
             variant={view === "table" ? "secondary" : "ghost"}
             onClick={() => setView("table")}
+            aria-label="Ver proyectos como tabla"
           >
             <List />
           </Button>
@@ -83,6 +112,7 @@ export function ProjectsView({ projects }: { projects: any[] }) {
             size="icon"
             variant={view === "cards" ? "secondary" : "ghost"}
             onClick={() => setView("cards")}
+            aria-label="Ver proyectos como tarjetas"
           >
             <LayoutGrid />
           </Button>
@@ -91,7 +121,13 @@ export function ProjectsView({ projects }: { projects: any[] }) {
       {view === "cards" ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {rows.map((p) => (
-            <ProjectCard key={p.id} project={p} />
+            <ProjectCard
+              key={p.id}
+              project={p}
+              areas={areas}
+              onUpdated={mergeProject}
+              onArchived={removeProject}
+            />
           ))}
         </div>
       ) : (
@@ -105,6 +141,7 @@ export function ProjectsView({ projects }: { projects: any[] }) {
                 <TableHead>Prioridad</TableHead>
                 <TableHead className="min-w-64">Próxima acción</TableHead>
                 <TableHead>Progreso</TableHead>
+                <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -116,7 +153,7 @@ export function ProjectsView({ projects }: { projects: any[] }) {
                 const outOfFocusActive =
                   !inFocus &&
                   p.tasks?.some(
-                    (t: any) => !["completed", "discarded"].includes(t.status)
+                    (t: any) => !["completed", "discarded"].includes(t.status),
                   );
                 return (
                   <TableRow
@@ -158,12 +195,10 @@ export function ProjectsView({ projects }: { projects: any[] }) {
                         )}
                       </div>
                       <p className="text-xs text-slate-400">
-                        Actualizado {fmt(p.updatedAt.toString())}
+                        Actualizado {fmt(p.updatedAt?.toString?.() ?? p.updatedAt)}
                       </p>
                     </TableCell>
-                    <TableCell>
-                      {p.area?.name || "Sin área"}
-                    </TableCell>
+                    <TableCell>{p.area?.name || "Sin área"}</TableCell>
                     <TableCell>
                       <Status value={p.status} />
                     </TableCell>
@@ -189,6 +224,14 @@ export function ProjectsView({ projects }: { projects: any[] }) {
                         <span className="text-xs">{p.progressPercentage || 0}%</span>
                       </div>
                     </TableCell>
+                    <TableCell>
+                      <ProjectActionMenu
+                        project={p}
+                        areas={areas}
+                        onUpdated={mergeProject}
+                        onArchived={removeProject}
+                      />
+                    </TableCell>
                   </TableRow>
                 );
               })}
@@ -200,7 +243,17 @@ export function ProjectsView({ projects }: { projects: any[] }) {
   );
 }
 
-function ProjectCard({ project: p }: { project: any }) {
+function ProjectCard({
+  project: p,
+  areas,
+  onUpdated,
+  onArchived,
+}: {
+  project: any;
+  areas: any[];
+  onUpdated: (project: any) => void;
+  onArchived: (projectId: string) => void;
+}) {
   const { data } = useData();
   const inFocus = [
     data?.focus?.mainProjectId,
@@ -208,51 +261,55 @@ function ProjectCard({ project: p }: { project: any }) {
   ].includes(p.id);
   const needsAction = p.status === "active" && !p.nextAction;
   return (
-    <Link href={`/projects/${p.id}`}>
-      <Card
-        className={`h-full border-l-4 transition hover:-translate-y-0.5 hover:shadow-md ${p.status === "blocked" ? "border-l-red-500 bg-red-50/40" : needsAction ? "border-l-orange-500 bg-orange-50/40" : p.status === "frozen" ? "border-l-slate-400 bg-slate-50" : "border-l-blue-500"}`}
-      >
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="grid size-9 place-items-center rounded-lg bg-slate-100">
-              <FolderKanban className="size-4" />
-            </div>
-            <div className="flex gap-2">
-              {inFocus && (
-                <SemanticBadge
-                  value={
-                    p.id === data.focus.mainProjectId ? "focus" : "secondary"
-                  }
-                  label="Foco"
-                />
-              )}
-              <Status value={p.status} />
-            </div>
-          </div>
-          <CardTitle className="pt-2 text-base">{p.name}</CardTitle>
-          <CardDescription>
-            {p.area?.name || "Sin área"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div
-            className={`mb-4 min-h-16 rounded-lg p-3 ${needsAction ? "bg-orange-100/70" : "bg-slate-50"}`}
-          >
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              Próxima acción
-            </p>
-            <p
-              className={`mt-1 text-sm font-semibold ${needsAction ? "text-orange-800" : "text-slate-900"}`}
-            >
-              {p.nextAction || "Definir una próxima acción concreta"}
-            </p>
+    <Card
+      className={`h-full border-l-4 transition hover:-translate-y-0.5 hover:shadow-md ${p.status === "blocked" ? "border-l-red-500 bg-red-50/40" : needsAction ? "border-l-orange-500 bg-orange-50/40" : p.status === "frozen" ? "border-l-slate-400 bg-slate-50" : "border-l-blue-500"}`}
+    >
+      <CardHeader>
+        <div className="flex items-start justify-between gap-3">
+          <div className="grid size-9 place-items-center rounded-lg bg-slate-100">
+            <FolderKanban className="size-4" />
           </div>
           <div className="flex items-center gap-2">
-            <Progress value={p.progressPercentage || 0} />
-            <span className="text-xs">{p.progressPercentage || 0}%</span>
+            {inFocus && (
+              <SemanticBadge
+                value={p.id === data.focus.mainProjectId ? "focus" : "secondary"}
+                label="Foco"
+              />
+            )}
+            <Status value={p.status} />
+            <ProjectActionMenu
+              project={p}
+              areas={areas}
+              onUpdated={onUpdated}
+              onArchived={onArchived}
+            />
           </div>
-        </CardContent>
-      </Card>
-    </Link>
+        </div>
+        <CardTitle className="pt-2 text-base">
+          <Link href={`/projects/${p.id}`} className="hover:underline">
+            {p.name}
+          </Link>
+        </CardTitle>
+        <CardDescription>{p.area?.name || "Sin área"}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div
+          className={`mb-4 min-h-16 rounded-lg p-3 ${needsAction ? "bg-orange-100/70" : "bg-slate-50"}`}
+        >
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+            Próxima acción
+          </p>
+          <p
+            className={`mt-1 text-sm font-semibold ${needsAction ? "text-orange-800" : "text-slate-900"}`}
+          >
+            {p.nextAction || "Definir una próxima acción concreta"}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Progress value={p.progressPercentage || 0} />
+          <span className="text-xs">{p.progressPercentage || 0}%</span>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
