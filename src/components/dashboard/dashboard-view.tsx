@@ -104,62 +104,25 @@ export function DashboardView({ data }: { data: { tasks: any[], projects: any[],
       })),
   ];
 
+
+  const upcomingDues = [...data.dues]
+    .filter((due) => due.status === "pending")
+    .sort((a, b) => days(a.dueDate) - days(b.dueDate));
+
   return (
     <>
       <Header
         title="Dashboard"
         desc=""
       />
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
-        <div className="space-y-4">
-          <DashboardPanel title="Prioritario" count={priorityTasks.length}>
-            <DashboardTaskList
-              tasks={priorityTasks.slice(0, 8)}
-              projectById={projectById}
-              empty="No hay prioridades abiertas."
-            />
-          </DashboardPanel>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <DashboardPanel title="Hoy" count={todayTasks.length}>
-              <DashboardTaskList
-                tasks={todayTasks.slice(0, 6)}
-                projectById={projectById}
-                empty="Nada marcado para hoy."
-              />
-            </DashboardPanel>
-            <DashboardPanel title="Esta semana" count={weekTasks.length}>
-              <DashboardTaskList
-                tasks={weekTasks.slice(0, 7)}
-                projectById={projectById}
-                empty="No hay tareas con fecha esta semana."
-              />
-            </DashboardPanel>
-          </div>
-          <DashboardPanel title="Trabado / esperando" count={waitingItems.length}>
-            <div className="space-y-2">
-              {waitingItems.length ? (
-                waitingItems.slice(0, 8).map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-slate-950">
-                        {item.title}
-                      </p>
-                      <p className="truncate text-xs text-slate-500">
-                        {item.subtitle}
-                      </p>
-                    </div>
-                    <Status value={item.status} />
-                  </div>
-                ))
-              ) : (
-                <Empty text="No hay bloqueos ni esperas externas." />
-              )}
-            </div>
-          </DashboardPanel>
-        </div>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)] mb-4">
+        <DashboardPanel title="Prioritario" count={priorityTasks.length}>
+          <DashboardTaskList
+            tasks={priorityTasks.slice(0, 8)}
+            projectById={projectById}
+            empty="No hay prioridades abiertas."
+          />
+        </DashboardPanel>
         <div className="space-y-4">
           <DashboardPanel title="Proyectos activos">
             <div className="flex items-end justify-between gap-4">
@@ -189,8 +152,51 @@ export function DashboardView({ data }: { data: { tasks: any[], projects: any[],
               ))}
             </div>
           </DashboardPanel>
-          <DashboardCalendar items={calendarItems} />
+          <DashboardPanel title="Próximos vencimientos" count={upcomingDues.length}>
+            <DashboardDueList dues={upcomingDues.slice(0, 5)} projectById={projectById} empty="No hay vencimientos próximos." />
+          </DashboardPanel>
         </div>
+      </div>
+      <div className="grid gap-4 xl:grid-cols-4">
+        <DashboardPanel title="Trabado / esperando" count={waitingItems.length}>
+          <div className="space-y-2">
+            {waitingItems.length ? (
+              waitingItems.slice(0, 8).map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-950">
+                      {item.title}
+                    </p>
+                    <p className="truncate text-xs text-slate-500">
+                      {item.subtitle}
+                    </p>
+                  </div>
+                  <Status value={item.status} />
+                </div>
+              ))
+            ) : (
+              <Empty text="No hay bloqueos ni esperas externas." />
+            )}
+          </div>
+        </DashboardPanel>
+        <DashboardPanel title="Hoy" count={todayTasks.length}>
+          <DashboardTaskList
+            tasks={todayTasks.slice(0, 6)}
+            projectById={projectById}
+            empty="Nada marcado para hoy."
+          />
+        </DashboardPanel>
+        <DashboardPanel title="Esta semana" count={weekTasks.length}>
+          <DashboardTaskList
+            tasks={weekTasks.slice(0, 7)}
+            projectById={projectById}
+            empty="No hay tareas con fecha esta semana."
+          />
+        </DashboardPanel>
+        <DashboardCalendar items={calendarItems} />
       </div>
     </>
   );
@@ -408,5 +414,80 @@ function DashboardCalendar({ items }: { items: DashboardCalendarItem[] }) {
         )}
       </div>
     </DashboardPanel>
+  );
+}
+
+
+function DashboardDueList({
+  dues,
+  projectById,
+  empty,
+}: {
+  dues: any[];
+  projectById: Map<string, any>;
+  empty: string;
+}) {
+  return (
+    <div className="space-y-2">
+      {dues.length ? (
+        dues.map((due) => (
+          <DashboardDueRow
+            key={due.id}
+            due={due}
+            project={projectById.get(due.projectId || "")}
+          />
+        ))
+      ) : (
+        <Empty text={empty} />
+      )}
+    </div>
+  );
+}
+
+function DashboardDueRow({
+  due,
+  project,
+}: {
+  due: any;
+  project?: any;
+}) {
+  const d = days(due.dueDate);
+  const overdue = d < 0;
+  const today = d === 0;
+  
+  return (
+    <div
+      className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${
+        overdue
+          ? "border-red-200 bg-red-50/70"
+          : today
+            ? "border-amber-200 bg-amber-50/70"
+            : "border-slate-200 bg-white"
+      }`}
+    >
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-slate-950">
+          <TextWithLinks value={due.title} />
+        </p>
+        <p className="mt-0.5 truncate text-xs text-slate-500">
+          {project?.name || "General"}
+          {due.dueDate ? ` · ${fmt(due.dueDate)}` : ""}
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-1.5">
+        <Badge
+          variant={overdue ? "destructive" : "secondary"}
+          className={
+            overdue
+              ? "bg-red-50 text-red-700 hover:bg-red-50 border-red-200"
+              : today
+                ? "bg-amber-100 text-amber-800 hover:bg-amber-100 border-amber-200"
+                : "bg-slate-100 text-slate-600 hover:bg-slate-100"
+          }
+        >
+          {overdue ? "Vencido" : today ? "Hoy" : `En ${d} días`}
+        </Badge>
+      </div>
+    </div>
   );
 }
