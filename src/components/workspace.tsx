@@ -1,90 +1,20 @@
-﻿// @ts-nocheck
 "use client";
-/* eslint-disable react-hooks/purity -- fechas relativas calculadas contra el inicio de la sesión */
+
 import Link from "next/link";
-import { useState } from "react";
-import { useData } from "@/components/data-provider";
-import type { Project, Task } from "@/lib/demo-data";
-import {
-  ArrowRight,
-  AlertCircle,
-  AlertTriangle,
-  CalendarClock,
-  Check,
-  CheckCircle2,
-  ChevronRight,
-  Clock3,
-  ExternalLink,
-  FolderKanban,
-  Inbox,
-  LayoutGrid,
-  List,
-  Pause,
-  Play,
-  Search,
-  Snowflake,
-  Target,
-  TrendingUp,
-  Zap,
-} from "lucide-react";
-import {
-  AttentionCard,
-  ContextCard,
-  DueDateBadge,
-  HeroCard,
-  OperationalCard,
-  SectionHeader,
-  SemanticBadge,
-} from "@/components/visual-hierarchy";
-import { Badge } from "@/components/ui/badge";
+import { CheckCircle2 } from "lucide-react";
+import { SemanticBadge } from "@/components/visual-hierarchy";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  DesktopShell,
-  DesktopWorkspace,
-} from "@/components/desktop-shell";
-import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 export const labels: Record<string, string> = {
   active: "Activo",
+  inactive: "Inactivo",
   blocked: "Bloqueado",
   paused: "Pausado",
   completed: "Terminado",
   frozen: "Congelado",
   idea: "Idea",
+  analysis: "Análisis",
   discarded: "Descartado",
   critical: "Crítica",
   high: "Alta",
@@ -98,10 +28,6 @@ export const labels: Record<string, string> = {
   overdue: "Vencido",
   archived: "Archivada",
   promoted: "Promovida",
-  captured: "Capturada",
-  evaluating: "Evaluando",
-  future: "A futuro",
-  converted_to_project: "Convertida",
   personal: "Personal",
   thirdparty: "Terceros",
   saas: "Producto",
@@ -113,28 +39,49 @@ export const labels: Record<string, string> = {
   maintenance: "Mantenimiento",
   domain: "Dominio",
   hosting: "Hosting",
-  backup: "Backup",
-  license: "Licencia",
+  database: "Base de datos",
+  email: "Email",
+  api: "API",
   repository: "Repositorio",
+  cloud_service: "Servicio cloud",
+  payment_gateway: "Pasarela de pago",
+  social_media: "Red social",
+  design_file: "Archivo de diseño",
+  analytics: "Analítica",
+  backup: "Backup",
   server: "Servidor",
+  legal_tax: "Legal / fiscal",
+  license: "Licencia",
+  other: "Otro",
+  expired: "Vencido",
+  cancelled: "Cancelado",
 };
+
 const TODAY = Date.now();
-export const fmt = (v?: string | Date | null | undefined) =>
-  v
+
+export const fmt = (value?: string | Date | null | undefined) =>
+  value
     ? new Intl.DateTimeFormat("es-AR", {
         day: "2-digit",
         month: "short",
-      }).format(new Date(v))
+      }).format(new Date(value))
     : "-";
-export const days = (v: string | Date | null | undefined) => { if (!v) return 0; return Math.ceil((new Date(v).getTime() - TODAY) / 86400000); };
-export function Status({ value }: { value: string }) {
+
+export const days = (value: string | Date | null | undefined) => {
+  if (!value) return 0;
+  return Math.ceil((new Date(value).getTime() - TODAY) / 86400000);
+};
+
+export function Status({ value }: { value?: string | null }) {
+  const safeValue = value || "pending";
   return (
     <SemanticBadge
-      value={value}
-      label={labels[value] || value.replaceAll("_", " ")}
+      value={safeValue}
+      label={labels[safeValue] || safeValue.replaceAll("_", " ")}
     />
   );
 }
+
 export function Header({
   title,
   desc,
@@ -156,6 +103,7 @@ export function Header({
     </div>
   );
 }
+
 export function Empty({ text }: { text: string }) {
   return (
     <div className="grid min-h-40 place-items-center rounded-xl border border-dashed bg-white p-8 text-center text-sm text-slate-500">
@@ -188,47 +136,78 @@ export function TextWithLinks({ value }: { value?: string | null }) {
   );
 }
 
-export function Workspace({ section }: { section: string }) {
-  switch (section) {
-    case "dashboard":
-      return <DashboardV2 />;
-    case "desktop":
-      return <Dashboard />;
-    case "explorer":
-      return <Explorer />;
-    case "focus":
-      return <Focus />;
-    case "projects":
-      return <Projects />;
-    case "tasks":
-      return <Tasks />;
-    case "modules":
-      return <Modules />;
-    case "freeze":
-      return <Freeze />;
-    case "assets":
-      return <Assets />;
-    case "dues":
-      return <Dues />;
-    case "reviews":
-      return <Reviews />;
-    case "ideas":
-      return <Ideas />;
-    case "library":
-      return <Library />;
-    case "boards":
-      return <Boards />;
-    case "settings":
-      return <Settings />;
-    default:
-      return <DashboardV2 />;
-  }
+export function Metric({
+  label,
+  value,
+  alert,
+}: {
+  label: string;
+  value: number;
+  alert?: boolean;
+}) {
+  return (
+    <div className="rounded-lg bg-slate-50 p-3">
+      <p className={`text-2xl font-semibold ${alert && value ? "text-red-600" : ""}`}>
+        {value}
+      </p>
+      <p className="text-xs text-slate-500">{label}</p>
+    </div>
+  );
 }
 
-function Dashboard() {
+export function TaskLine({ task }: { task: any }) {
   return (
-    <DesktopShell>
-      <DesktopWorkspace />
-    </DesktopShell>
+    <div className="flex items-center gap-3 border-t py-3 first:border-0">
+      <CheckCircle2 className="size-5 text-slate-300" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold text-slate-950">
+          <TextWithLinks value={task.title} />
+        </p>
+        <p className="mt-1 text-xs text-slate-500">
+          {task.project?.name || "Inbox"} · {task.dueDate ? fmt(task.dueDate) : "Sin fecha"}
+        </p>
+      </div>
+      <Status value={task.priority} />
+    </div>
+  );
+}
+
+export function Workspace({ section }: { section: string; id?: string }) {
+  return <WorkspacePlaceholder section={section} />;
+}
+
+function WorkspacePlaceholder({ section }: { section: string }) {
+  const knownRoutes: Record<string, string> = {
+    dashboard: "/dashboard",
+    projects: "/projects",
+    tasks: "/tasks",
+    assets: "/assets",
+    ideas: "/ideas",
+  };
+
+  const href = knownRoutes[section];
+
+  return (
+    <>
+      <Header
+        title={labels[section] || section.replaceAll("-", " ")}
+        desc="Esta vista está preparada para conectarse a su pantalla específica."
+        action={
+          href ? (
+            <Button asChild variant="outline">
+              <Link href={href}>Abrir vista</Link>
+            </Button>
+          ) : null
+        }
+      />
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Vista en preparación</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Empty text="Esta sección todavía no tiene una pantalla propia conectada en esta ruta." />
+        </CardContent>
+      </Card>
+    </>
   );
 }
