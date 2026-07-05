@@ -2,11 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Lightbulb, Plus, Search } from "lucide-react";
+import { Lightbulb, Search } from "lucide-react";
 import { IdeaActionMenu } from "@/components/ideas/idea-action-menu";
-import { IdeaFormModal } from "@/components/ideas/idea-form-modal";
 import { Header, fmt, labels, Status } from "@/components/workspace";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -37,7 +35,6 @@ export function IdeasView({
   const [projectRows, setProjectRows] = useState(projects);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
-  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     setRows(ideas);
@@ -60,10 +57,6 @@ export function IdeasView({
           : idea,
       ),
     );
-  }
-
-  function addIdea(idea: any) {
-    setRows((current) => [idea, ...current]);
   }
 
   function removeIdea(ideaId: string) {
@@ -99,20 +92,6 @@ export function IdeasView({
       <Header
         title="Incubadora de ideas"
         desc="Capturar no significa comprometerse. Evaluá antes de abrir otro frente."
-        action={
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="size-4" />
-            Nueva idea
-          </Button>
-        }
-      />
-
-      <IdeaFormModal
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        projects={projectRows}
-        areas={areas}
-        onSaved={addIdea}
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border bg-white p-3">
