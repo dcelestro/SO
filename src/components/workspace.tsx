@@ -52,16 +52,6 @@ export const labels: Record<string, string> = {
   server: "Servidor",
   legal_tax: "Legal / fiscal",
   license: "Licencia",
-  subscription: "Suscripción",
-  ssl: "SSL",
-  tax: "Impuesto",
-  review: "Revisión",
-  none: "Sin recurrencia",
-  weekly: "Semanal",
-  monthly: "Mensual",
-  quarterly: "Trimestral",
-  yearly: "Anual",
-  custom: "Personalizada",
   other: "Otro",
   expired: "Vencido",
   cancelled: "Cancelado",
@@ -193,7 +183,6 @@ function WorkspacePlaceholder({ section }: { section: string }) {
     tasks: "/tasks",
     assets: "/assets",
     ideas: "/ideas",
-    vencimientos: "/vencimientos",
   };
 
   const href = knownRoutes[section];
