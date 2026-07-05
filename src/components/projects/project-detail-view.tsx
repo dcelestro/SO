@@ -1,40 +1,41 @@
 "use client";
-import { useUpdateProjectMutation } from "@/hooks/use-queries";
 
 import Link from "next/link";
-import { AlertCircle, AlertTriangle, ArrowRight, CalendarClock, Snowflake, Zap } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { AlertCircle, AlertTriangle, ArrowRight, CalendarClock, Edit2, Zap } from "lucide-react";
 import { useAppData as useData } from "@/components/use-app-data";
-import { Empty, fmt, labels, Status, days } from "@/components/workspace";
+import { Empty, fmt, labels, Status, days, TaskLine, Metric } from "@/components/workspace";
 import { AttentionCard, SemanticBadge } from "@/components/visual-hierarchy";
+import { ProjectActionMenu } from "@/components/projects/project-action-menu";
+import { ProjectFormModal } from "@/components/projects/project-form-modal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-// We need TaskLine and Metric from workspace.tsx, let's assume we can import them, 
-// or I will export them from workspace.tsx
-import { TaskLine, Metric } from "@/components/workspace";
 
-export function ProjectDetailView({ project: p, tasks }: { project: any, tasks: any[] }) {
+export function ProjectDetailView({ project, tasks }: { project: any; tasks: any[] }) {
+  const router = useRouter();
   const { data } = useData();
-  const updateProjectMut = useUpdateProjectMutation();
-  
+  const [p, setProject] = useState(project);
+  const [editOpen, setEditOpen] = useState(false);
+
   const id = p.id;
-  const assets = data.assets.filter((a) => a.projectId === id);
-  const ideas = data.ideas.filter((i) => i.projectId === id);
-  const dues = data.dues.filter((d) => d.projectId === id);
-  const reviews = data.reviews.filter((r) => r.projectId === id);
+  const areas = data?.areas?.length ? data.areas : p.area ? [p.area] : [];
+  const assets = (data.assets || []).filter((a: any) => a.projectId === id);
+  const ideas = (data.ideas || []).filter((i: any) => i.projectId === id);
+  const dues = (data.dues || []).filter((d: any) => d.projectId === id);
+  const reviews = (data.reviews || []).filter((r: any) => r.projectId === id);
+
+  function mergeProject(updatedProject: any) {
+    setProject((current: any) => ({
+      ...current,
+      ...updatedProject,
+      area: updatedProject.area ?? current.area,
+      tasks: updatedProject.tasks ?? current.tasks,
+    }));
+  }
 
   const isMainFocus = p.id === data?.focus?.mainProjectId;
   const isSecondaryFocus = data?.focus?.secondaryProjectIds?.includes(p.id);
@@ -44,7 +45,7 @@ export function ProjectDetailView({ project: p, tasks }: { project: any, tasks: 
   );
 
   const upcomingDues = dues.filter(
-    (d) => d.status === "pending" && days(d.dueDate) <= 30,
+    (d: any) => d.status === "pending" && days(d.dueDate) <= 30,
   );
 
   const health =
@@ -53,25 +54,6 @@ export function ProjectDetailView({ project: p, tasks }: { project: any, tasks: 
       : !p.nextAction && p.status === "active"
         ? "Requiere decisión"
         : "Saludable";
-
-  const freeze = () => {
-    // We update local state if we want, but since projects are loaded from server,
-    // this would require a revalidatePath or router.refresh() in a real app,
-    // plus a fetch to /api/projects/:id to change status.
-    // For now we simulate the frontend behavior by updating DB via API (assuming API exists)
-    fetch(`/api/projects/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        status: "frozen", 
-        isFrozen: true,
-        frozenReason: "Pausa consciente para reducir frentes abiertos",
-        frozenUntil: new Date(Date.now() + 30 * 86400000).toISOString()
-      }),
-    }).then(() => {
-      window.location.reload(); // Simple refresh for MVP
-    });
-  };
 
   return (
     <>
@@ -112,33 +94,31 @@ export function ProjectDetailView({ project: p, tasks }: { project: any, tasks: 
               {p.description}
             </p>
           </div>
-          {!p.isFrozen && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline">
-                  <Snowflake />
-                  Congelar
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Congelar proyecto</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    El proyecto saldrá de los activos y quedará en el
-                    Congelador. Se registrará una revisión dentro de 30 días.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={freeze}>
-                    Congelar proyecto
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setEditOpen(true)}>
+              <Edit2 className="size-4" />
+              Editar proyecto
+            </Button>
+            <ProjectActionMenu
+              project={p}
+              areas={areas}
+              showView={false}
+              onUpdated={mergeProject}
+              onArchived={() => router.push("/projects")}
+              onEditOpenChange={setEditOpen}
+            />
+          </div>
         </div>
       </div>
+
+      <ProjectFormModal
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        project={p}
+        areas={areas}
+        onSaved={mergeProject}
+      />
+
       <div className="mb-4 grid gap-3 md:grid-cols-3">
         <AttentionCard
           tone={!p.nextAction && p.status === "active" ? "warning" : "focus"}
@@ -170,6 +150,7 @@ export function ProjectDetailView({ project: p, tasks }: { project: any, tasks: 
           </CardContent>
         </Card>
       </div>
+
       {(p.status === "blocked" ||
         overdueTasks.length > 0 ||
         upcomingDues.length > 0) && (
@@ -200,6 +181,7 @@ export function ProjectDetailView({ project: p, tasks }: { project: any, tasks: 
           )}
         </div>
       )}
+
       <Tabs defaultValue="summary">
         <TabsList className="h-auto flex-wrap justify-start">
           {[
@@ -273,7 +255,7 @@ export function ProjectDetailView({ project: p, tasks }: { project: any, tasks: 
         </TabsContent>
         <TabsContent value="assets">
           <SimpleList
-            items={assets.map((a) => [
+            items={assets.map((a: any) => [
               a.name,
               `${labels[a.type] || a.type} · ${a.provider || "Sin proveedor"}`,
             ])}
@@ -281,18 +263,18 @@ export function ProjectDetailView({ project: p, tasks }: { project: any, tasks: 
         </TabsContent>
         <TabsContent value="ideas">
           <SimpleList
-            items={ideas.map((i) => [
+            items={ideas.map((i: any) => [
               i.title,
               i.description || labels[i.status],
             ])}
           />
         </TabsContent>
         <TabsContent value="dues">
-          <SimpleList items={dues.map((d) => [d.title, fmt(d.dueDate)])} />
+          <SimpleList items={dues.map((d: any) => [d.title, fmt(d.dueDate)])} />
         </TabsContent>
         <TabsContent value="reviews">
           <SimpleList
-            items={reviews.map((r) => [r.title, fmt(r.nextReviewDate)])}
+            items={reviews.map((r: any) => [r.title, fmt(r.nextReviewDate)])}
           />
         </TabsContent>
         <TabsContent value="kpis">
