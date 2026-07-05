@@ -3,28 +3,23 @@ import { getPrisma } from "@/lib/prisma";
 
 export default async function DashboardPage() {
   const prisma = getPrisma();
-  const [tasks, projects, dues, reviews] = await Promise.all([
+  const [tasks, projects, assets, ideas] = await Promise.all([
     prisma.task.findMany({
       where: { status: { notIn: ["completed", "discarded"] } },
-      include: { project: true }
+      include: { project: true },
     }),
     prisma.project.findMany({
-      where: { status: { in: ["active", "blocked"] } },
+      where: { status: { in: ["active", "blocked", "frozen"] } },
     }),
-    prisma.dueItem.findMany({
-      where: { status: "pending" },
+    prisma.digitalAsset.findMany({
+      where: { status: { in: ["active", "pending"] }, renewalDate: { not: null } },
+      include: { project: true },
     }),
-    prisma.review.findMany({
-      where: { status: "pending" },
-    })
+    prisma.idea.findMany({
+      where: { status: "inbox", reviewDate: { not: null } },
+      include: { project: true },
+    }),
   ]);
 
-  const data = {
-    tasks,
-    projects,
-    dues: dues.map(d => ({ ...d, amount: d.amount ? Number(d.amount) : null })),
-    reviews
-  };
-
-  return <DashboardView data={data as any} />;
+  return <DashboardView data={{ tasks, projects, assets, ideas } as any} />;
 }
