@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BarChart3,
   Bell,
@@ -16,6 +16,7 @@ import {
   Menu,
   Network,
   Plus,
+  Save,
   Settings,
   ShieldCheck,
   Snowflake,
@@ -23,6 +24,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { QuickCreate } from "./quick-create";
@@ -33,6 +35,14 @@ import { useAppData as useData } from "@/components/use-app-data";
 
 type NavItemConfig = { href: string; label: string; Icon: LucideIcon };
 type NavGroup = { label: string; items: NavItemConfig[] };
+type HeaderBoardAction = {
+  label: string;
+  title: string;
+  saving: boolean;
+  message: string;
+  onSave: () => void;
+  onTitleChange: (title: string) => void;
+};
 
 const groups: NavGroup[] = [
   {
@@ -107,6 +117,7 @@ function Nav({ close }: { close?: () => void }) {
 function Shell({ children }: { children: React.ReactNode }) {
   const [create, setCreate] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [boardAction, setBoardAction] = useState<HeaderBoardAction | null>(null);
   const { dataSource, dataError } = useData();
   const sourceLabel =
     dataSource === "backend"
@@ -118,6 +129,17 @@ function Shell({ children }: { children: React.ReactNode }) {
           : dataSource === "error"
             ? "Backend con error"
             : "Validando backend";
+
+  useEffect(() => {
+    const onRegister = (event: Event) => setBoardAction((event as CustomEvent<HeaderBoardAction>).detail);
+    const onClear = () => setBoardAction(null);
+    window.addEventListener("nexo:board-header-action", onRegister);
+    window.addEventListener("nexo:clear-board-header-action", onClear);
+    return () => {
+      window.removeEventListener("nexo:board-header-action", onRegister);
+      window.removeEventListener("nexo:clear-board-header-action", onClear);
+    };
+  }, []);
 
   return (
     <TooltipProvider>
@@ -138,6 +160,23 @@ function Shell({ children }: { children: React.ReactNode }) {
           </Sheet>
           <Spotlight />
           <div className="ml-auto flex items-center gap-2">
+            {boardAction ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={boardAction.title}
+                  onChange={(event) => boardAction.onTitleChange(event.target.value)}
+                  className="hidden h-9 w-56 md:block"
+                  aria-label="Título de la pizarra"
+                />
+                {boardAction.message ? (
+                  <span className="hidden text-xs text-slate-500 md:inline">{boardAction.message}</span>
+                ) : null}
+                <Button size="sm" variant="outline" disabled={boardAction.saving} onClick={boardAction.onSave}>
+                  <Save className="size-4" />
+                  {boardAction.saving ? "Guardando..." : boardAction.label}
+                </Button>
+              </div>
+            ) : null}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button size="sm" onClick={() => setCreate(true)}>
