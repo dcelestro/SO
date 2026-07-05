@@ -23,6 +23,19 @@ const kinds = [
   { id: "asset", label: "Activo", Icon: ShieldCheck },
 ] as const;
 
+const assetTypes = [
+  ["domain", "Dominio"],
+  ["hosting", "Hosting"],
+  ["database", "Base de datos"],
+  ["email", "Email"],
+  ["api", "API"],
+  ["repository", "Repositorio"],
+  ["cloud_service", "Servicio cloud"],
+  ["backup", "Backup"],
+  ["server", "Servidor"],
+  ["other", "Otro"],
+] as const;
+
 export function QuickCreateModal({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const router = useRouter();
   const { data } = useData();
@@ -61,7 +74,7 @@ export function QuickCreateModal({ open, onOpenChange }: { open: boolean; onOpen
         }
 
         if (kind === "asset") {
-          await createAsset({ name: title, description: description || null, projectId, areaId: areaId || null, type: String(formData.get("assetType") || "other"), provider: String(formData.get("provider") || "") || null, renewalDate: date, status: "active" });
+          await createAsset({ name: title, notes: description || null, projectId, areaId: areaId || null, type: String(formData.get("assetType") || "other"), provider: String(formData.get("provider") || "") || null, renewalDate: date, status: "active" });
         }
 
         router.refresh();
@@ -95,7 +108,7 @@ export function QuickCreateModal({ open, onOpenChange }: { open: boolean; onOpen
           </Field>
 
           {kind !== "task" ? (
-            <Field label="Descripción">
+            <Field label={kind === "asset" ? "Notas" : "Descripción"}>
               <Textarea name="description" rows={3} />
             </Field>
           ) : null}
@@ -138,7 +151,12 @@ export function QuickCreateModal({ open, onOpenChange }: { open: boolean; onOpen
 
             {kind === "asset" ? (
               <>
-                <Field label="Tipo"><Input name="assetType" placeholder="domain, hosting, repository..." /></Field>
+                <Field label="Tipo">
+                  <Select name="assetType" defaultValue="other">
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{assetTypes.map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent>
+                  </Select>
+                </Field>
                 <Field label="Proveedor"><Input name="provider" /></Field>
               </>
             ) : null}
