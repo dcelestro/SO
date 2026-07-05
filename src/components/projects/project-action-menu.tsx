@@ -88,6 +88,7 @@ export function ProjectActionMenu({
   function resumeProject() {
     mutateProject({
       status: project.nextAction ? "active" : "paused",
+      nextAction: project.nextAction ?? null,
       isFrozen: false,
       frozenReason: null,
       frozenUntil: null,
