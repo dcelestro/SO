@@ -1,6 +1,8 @@
 import { AssetsView } from "@/components/assets/assets-view";
 import { getPrisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function AssetsPage() {
   const prisma = getPrisma();
   const [assets, projects, areas] = await Promise.all([
