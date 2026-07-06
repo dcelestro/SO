@@ -20,7 +20,7 @@ import type { DashboardKpi, DashboardRadar, DashboardRadarItem, DashboardSeverit
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Empty, TextWithLinks, fmt, days } from "@/components/workspace";
+import { Empty, TextWithLinks, fmt } from "@/components/workspace";
 
 const severityLabel: Record<DashboardSeverity, string> = {
   critical: "Crítica",
@@ -73,6 +73,27 @@ const severityStyles: Record<DashboardSeverity, { badge: string; row: string; do
   },
 };
 
+type PanelAccent = DashboardSeverity | "indigo" | "violet" | "slate";
+
+const panelAccentStyles: Record<PanelAccent, string> = {
+  critical: "border-t-red-400",
+  high: "border-t-orange-400",
+  medium: "border-t-blue-400",
+  low: "border-t-emerald-400",
+  info: "border-t-slate-300",
+  indigo: "border-t-indigo-400",
+  violet: "border-t-violet-400",
+  slate: "border-t-slate-400",
+};
+
+const sideAccentStyles: Record<DashboardSeverity, string> = {
+  critical: "border-l-red-500",
+  high: "border-l-orange-500",
+  medium: "border-l-blue-500",
+  low: "border-l-emerald-500",
+  info: "border-l-slate-400",
+};
+
 const kindLabels: Record<DashboardRadarItem["kind"], string> = {
   task: "Tarea",
   project: "Proyecto",
@@ -85,37 +106,39 @@ const kpiIcons: ComponentType<{ className?: string }>[] = [ClipboardList, Lock, 
 
 export function DashboardView({ radar }: { radar: DashboardRadar }) {
   return (
-    <div className="space-y-5">
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(430px,0.95fr)]">
-        <HeroIssue item={radar.heroIssue} />
-        <KpiConsole kpis={radar.kpis} />
-      </section>
+    <div className="-mx-4 -my-7 min-h-[calc(100vh-8rem)] bg-[#edf1f5] px-4 py-7 md:-mx-7 md:px-7">
+      <div className="mx-auto max-w-7xl space-y-5">
+        <section className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(430px,0.95fr)]">
+          <HeroIssue item={radar.heroIssue} />
+          <KpiConsole kpis={radar.kpis} />
+        </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,0.85fr)_minmax(0,0.9fr)_minmax(380px,0.95fr)]">
-        <RadarPanel title="Prioritario" count={radar.priorityItems.length} actionHref="/tasks" actionLabel="Ver todo">
-          <ItemList items={radar.priorityItems.slice(0, 6)} empty="No hay señales críticas o altas abiertas." />
-        </RadarPanel>
-        <RadarPanel title="Hoy" count={radar.todayItems.length} actionHref="/tasks" actionLabel="Ver agenda">
-          <ItemList items={radar.todayItems.slice(0, 5)} empty="Nada venciendo hoy. Buen momento para avanzar." compact />
-        </RadarPanel>
-        <RadarPanel title="Trabado / esperando" count={radar.waitingItems.length} actionHref="/projects" actionLabel="Ver bloqueos">
-          <ItemList items={radar.waitingItems.slice(0, 5)} empty="No hay bloqueos ni esperas activas." compact />
-          {radar.waitingItems.length ? (
-            <Link href="/projects" className="mt-3 flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50 px-3 py-3 text-sm text-blue-700 hover:bg-blue-100">
-              <span>{radar.waitingItems.length} señal{radar.waitingItems.length === 1 ? "" : "es"} deteniendo avance</span>
-              <ArrowRight className="size-4" />
-            </Link>
-          ) : null}
-        </RadarPanel>
-        <div className="space-y-4">
-          <RadarPanel title="Próximas señales" count={radar.upcomingSignals.length} actionHref="/alerts" actionLabel="Ver todas">
-            <ItemList items={radar.upcomingSignals.slice(0, 5)} empty="Sin señales próximas en el horizonte." compact />
+        <section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,0.85fr)_minmax(0,0.9fr)_minmax(380px,0.95fr)]">
+          <RadarPanel title="Prioritario" count={radar.priorityItems.length} actionHref="/tasks" actionLabel="Ver todo" accent="critical">
+            <ItemList items={radar.priorityItems.slice(0, 6)} empty="No hay señales críticas o altas abiertas." />
           </RadarPanel>
-          <OperationalCalendar items={radar.calendarItems} />
-        </div>
-      </section>
+          <RadarPanel title="Hoy" count={radar.todayItems.length} actionHref="/tasks" actionLabel="Ver agenda" accent="medium">
+            <ItemList items={radar.todayItems.slice(0, 5)} empty="Nada venciendo hoy. Buen momento para avanzar." compact />
+          </RadarPanel>
+          <RadarPanel title="Trabado / esperando" count={radar.waitingItems.length} actionHref="/projects" actionLabel="Ver bloqueos" accent="high">
+            <ItemList items={radar.waitingItems.slice(0, 5)} empty="No hay bloqueos ni esperas activas." compact />
+            {radar.waitingItems.length ? (
+              <Link href="/projects" className="mt-3 flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50 px-3 py-3 text-sm text-blue-700 hover:bg-blue-100">
+                <span>{radar.waitingItems.length} señal{radar.waitingItems.length === 1 ? "" : "es"} deteniendo avance</span>
+                <ArrowRight className="size-4" />
+              </Link>
+            ) : null}
+          </RadarPanel>
+          <div className="space-y-4">
+            <RadarPanel title="Próximas señales" count={radar.upcomingSignals.length} actionHref="/alerts" actionLabel="Ver todas" accent="indigo">
+              <ItemList items={radar.upcomingSignals.slice(0, 5)} empty="Sin señales próximas en el horizonte." compact />
+            </RadarPanel>
+            <OperationalCalendar items={radar.calendarItems} />
+          </div>
+        </section>
 
-      <LastProgressCard progress={radar.lastProgress} />
+        <LastProgressCard progress={radar.lastProgress} />
+      </div>
     </div>
   );
 }
@@ -123,7 +146,7 @@ export function DashboardView({ radar }: { radar: DashboardRadar }) {
 function HeroIssue({ item }: { item: DashboardRadarItem | null }) {
   if (!item) {
     return (
-      <Card className="overflow-hidden border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-white shadow-sm">
+      <Card className="overflow-hidden border border-emerald-200 border-t-4 border-t-emerald-400 bg-gradient-to-br from-emerald-50 via-white to-white shadow-sm ring-1 ring-emerald-100/60">
         <CardContent className="flex min-h-[220px] flex-col justify-between p-6">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700">
@@ -141,12 +164,10 @@ function HeroIssue({ item }: { item: DashboardRadarItem | null }) {
     );
   }
 
-  const style = severityStyles[item.severity];
-
   return (
-    <Card className={`overflow-hidden border-l-4 ${style.border} bg-gradient-to-br from-white via-white to-slate-50 shadow-sm`}>
+    <Card className={`overflow-hidden border border-slate-200 border-l-4 ${sideAccentStyles[item.severity]} bg-gradient-to-br from-white via-white to-slate-50 shadow-sm ring-1 ring-slate-200/70`}>
       <CardContent className="relative flex min-h-[260px] flex-col justify-between p-6">
-        <div className="absolute right-6 top-7 grid size-20 place-items-center rounded-full bg-red-50 text-red-600 ring-1 ring-red-100">
+        <div className={`absolute right-6 top-7 grid size-20 place-items-center rounded-full ring-1 ${severityStyles[item.severity].tint}`}>
           <Zap className="size-9" />
         </div>
         <div className="pr-24">
@@ -172,7 +193,7 @@ function HeroIssue({ item }: { item: DashboardRadarItem | null }) {
 
 function KpiConsole({ kpis }: { kpis: DashboardKpi[] }) {
   return (
-    <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
+    <Card className="overflow-hidden border border-slate-200 bg-white shadow-sm ring-1 ring-slate-200/70">
       <CardContent className="p-0">
         <div className="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-5">
           {kpis.map((kpi, index) => {
@@ -188,7 +209,7 @@ function KpiConsole({ kpis }: { kpis: DashboardKpi[] }) {
 function KpiTile({ kpi, icon: Icon }: { kpi: DashboardKpi; icon: ComponentType<{ className?: string }> }) {
   const style = severityStyles[kpi.severity];
   return (
-    <Link href={kpi.href} className="group block p-5 transition hover:bg-slate-50">
+    <Link href={kpi.href} className={`group block border-t-4 ${panelAccentStyles[kpi.severity]} bg-white p-5 transition hover:bg-slate-50`}>
       <div className={`mb-4 grid size-9 place-items-center rounded-xl ring-1 ${style.tint}`}>
         <Icon className="size-4" />
       </div>
@@ -202,9 +223,9 @@ function KpiTile({ kpi, icon: Icon }: { kpi: DashboardKpi; icon: ComponentType<{
   );
 }
 
-function RadarPanel({ title, count, actionHref, actionLabel, children }: { title: string; count?: number; actionHref?: string; actionLabel?: string; children: ReactNode }) {
+function RadarPanel({ title, count, actionHref, actionLabel, accent = "slate", children }: { title: string; count?: number; actionHref?: string; actionLabel?: string; accent?: PanelAccent; children: ReactNode }) {
   return (
-    <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
+    <Card className={`overflow-hidden border border-slate-200 border-t-4 ${panelAccentStyles[accent]} bg-white shadow-sm ring-1 ring-slate-200/70`}>
       <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 border-b border-slate-100 px-4 py-3">
         <div className="flex items-center gap-2">
           <CardTitle className="text-base">{title}</CardTitle>
@@ -248,7 +269,7 @@ function SeverityBadge({ severity }: { severity: DashboardSeverity }) {
 
 function LastProgressCard({ progress }: { progress: DashboardRadar["lastProgress"] }) {
   return (
-    <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
+    <Card className="overflow-hidden border border-slate-200 border-t-4 border-t-blue-400 bg-white shadow-sm ring-1 ring-slate-200/70">
       <CardHeader className="border-b border-slate-100 px-5 py-4">
         <div className="flex items-center gap-2">
           <div className="grid size-9 place-items-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
@@ -323,7 +344,7 @@ function OperationalCalendar({ items }: { items: DashboardRadarItem[] }) {
   const selectedItems = itemsByDate.get(selectedDate) || [];
 
   return (
-    <RadarPanel title="Calendario operativo" count={items.length} actionHref="/tasks" actionLabel="Ver agenda">
+    <RadarPanel title="Calendario operativo" count={items.length} actionHref="/tasks" actionLabel="Ver agenda" accent="slate">
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-sm font-semibold capitalize text-slate-900">{new Intl.DateTimeFormat("es-AR", { month: "long", year: "numeric" }).format(monthDate)}</p>
         <div className="flex items-center gap-1 text-xs text-slate-500"><CalendarDays className="size-3.5" /> señales</div>
