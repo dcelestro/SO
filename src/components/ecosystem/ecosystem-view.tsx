@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AlertTriangle, ArrowRight, Boxes, FolderKanban, FolderTree, Layers3, Search, ShieldCheck, Target } from "lucide-react";
+import { AlertTriangle, ArrowRight, Boxes, FolderKanban, FolderTree, Search, ShieldCheck, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { labels, Status, days, TextWithLinks } from "@/components/workspace";
+import { Status, days, TextWithLinks } from "@/components/workspace";
 
 type Filter = "area" | "attention" | "blocked" | "missing_next" | "resources" | "all";
 type Tone = "critical" | "high" | "medium" | "low" | "info";
