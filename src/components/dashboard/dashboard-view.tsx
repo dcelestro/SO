@@ -106,38 +106,40 @@ const kpiIcons: ComponentType<{ className?: string }>[] = [ClipboardList, Lock, 
 
 export function DashboardView({ radar }: { radar: DashboardRadar }) {
   return (
-    <div className="-mx-4 -my-7 min-h-[calc(100vh-8rem)] bg-[#edf1f5] px-4 py-7 md:-mx-7 md:px-7">
-      <div className="mx-auto max-w-7xl space-y-5">
-        <section className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(430px,0.95fr)]">
-          <HeroIssue item={radar.heroIssue} />
-          <KpiConsole kpis={radar.kpis} />
-        </section>
+    <div className="relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen min-h-[calc(100vh-8rem)] bg-[#edf1f5]">
+      <div className="mx-auto max-w-7xl px-4 py-7 md:px-7">
+        <div className="space-y-5">
+          <section className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(430px,0.95fr)]">
+            <HeroIssue item={radar.heroIssue} />
+            <KpiConsole kpis={radar.kpis} />
+          </section>
 
-        <section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,0.85fr)_minmax(0,0.9fr)_minmax(380px,0.95fr)]">
-          <RadarPanel title="Prioritario" count={radar.priorityItems.length} actionHref="/tasks" actionLabel="Ver todo" accent="critical">
-            <ItemList items={radar.priorityItems.slice(0, 6)} empty="No hay señales críticas o altas abiertas." />
-          </RadarPanel>
-          <RadarPanel title="Hoy" count={radar.todayItems.length} actionHref="/tasks" actionLabel="Ver agenda" accent="medium">
-            <ItemList items={radar.todayItems.slice(0, 5)} empty="Nada venciendo hoy. Buen momento para avanzar." compact />
-          </RadarPanel>
-          <RadarPanel title="Trabado / esperando" count={radar.waitingItems.length} actionHref="/projects" actionLabel="Ver bloqueos" accent="high">
-            <ItemList items={radar.waitingItems.slice(0, 5)} empty="No hay bloqueos ni esperas activas." compact />
-            {radar.waitingItems.length ? (
-              <Link href="/projects" className="mt-3 flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50 px-3 py-3 text-sm text-blue-700 hover:bg-blue-100">
-                <span>{radar.waitingItems.length} señal{radar.waitingItems.length === 1 ? "" : "es"} deteniendo avance</span>
-                <ArrowRight className="size-4" />
-              </Link>
-            ) : null}
-          </RadarPanel>
-          <div className="space-y-4">
-            <RadarPanel title="Próximas señales" count={radar.upcomingSignals.length} actionHref="/alerts" actionLabel="Ver todas" accent="indigo">
-              <ItemList items={radar.upcomingSignals.slice(0, 5)} empty="Sin señales próximas en el horizonte." compact />
+          <section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,0.85fr)_minmax(0,0.9fr)_minmax(380px,0.95fr)]">
+            <RadarPanel title="Prioritario" count={radar.priorityItems.length} actionHref="/tasks" actionLabel="Ver todo" accent="critical">
+              <ItemList items={radar.priorityItems.slice(0, 6)} empty="No hay señales críticas o altas abiertas." />
             </RadarPanel>
-            <OperationalCalendar items={radar.calendarItems} />
-          </div>
-        </section>
+            <RadarPanel title="Hoy" count={radar.todayItems.length} actionHref="/tasks" actionLabel="Ver agenda" accent="medium">
+              <ItemList items={radar.todayItems.slice(0, 5)} empty="Nada venciendo hoy. Buen momento para avanzar." compact />
+            </RadarPanel>
+            <RadarPanel title="Trabado / esperando" count={radar.waitingItems.length} actionHref="/projects" actionLabel="Ver bloqueos" accent="high">
+              <ItemList items={radar.waitingItems.slice(0, 5)} empty="No hay bloqueos ni esperas activas." compact />
+              {radar.waitingItems.length ? (
+                <Link href="/projects" className="mt-3 flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50 px-3 py-3 text-sm text-blue-700 hover:bg-blue-100">
+                  <span>{radar.waitingItems.length} señal{radar.waitingItems.length === 1 ? "" : "es"} deteniendo avance</span>
+                  <ArrowRight className="size-4" />
+                </Link>
+              ) : null}
+            </RadarPanel>
+            <div className="space-y-4">
+              <RadarPanel title="Próximas señales" count={radar.upcomingSignals.length} actionHref="/alerts" actionLabel="Ver todas" accent="indigo">
+                <ItemList items={radar.upcomingSignals.slice(0, 5)} empty="Sin señales próximas en el horizonte." compact />
+              </RadarPanel>
+              <OperationalCalendar items={radar.calendarItems} />
+            </div>
+          </section>
 
-        <LastProgressCard progress={radar.lastProgress} />
+          <LastProgressCard progress={radar.lastProgress} />
+        </div>
       </div>
     </div>
   );
