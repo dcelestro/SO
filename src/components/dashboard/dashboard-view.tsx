@@ -100,11 +100,9 @@ export function DashboardView({ radar }: { radar: DashboardRadar }) {
             Centro visual de atención. Nexo prioriza automáticamente lo que requiere acción con datos de tareas, proyectos, activos, ideas, alertas y actividad.
           </p>
         </div>
-        <Button asChild className="h-11 rounded-xl bg-blue-600 px-5 font-semibold hover:bg-blue-700">
-          <Link href="/tasks">
-            <Zap className="mr-2 size-4" />
-            Captura rápida
-          </Link>
+        <Button type="button" onClick={() => window.dispatchEvent(new Event("nexo:open-quick-create"))} className="h-11 rounded-xl bg-blue-600 px-5 font-semibold hover:bg-blue-700">
+          <Zap className="mr-2 size-4" />
+          Captura rápida
         </Button>
       </section>
 
