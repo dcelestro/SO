@@ -133,11 +133,14 @@ function Shell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const onRegister = (event: Event) => setBoardAction((event as CustomEvent<HeaderBoardAction>).detail);
     const onClear = () => setBoardAction(null);
+    const onOpenQuickCreate = () => setCreate(true);
     window.addEventListener("nexo:board-header-action", onRegister);
     window.addEventListener("nexo:clear-board-header-action", onClear);
+    window.addEventListener("nexo:open-quick-create", onOpenQuickCreate);
     return () => {
       window.removeEventListener("nexo:board-header-action", onRegister);
       window.removeEventListener("nexo:clear-board-header-action", onClear);
+      window.removeEventListener("nexo:open-quick-create", onOpenQuickCreate);
     };
   }, []);
 
