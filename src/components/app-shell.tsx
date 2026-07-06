@@ -10,7 +10,6 @@ import {
   FolderKanban,
   FolderTree,
   Home,
-  Inbox,
   Library,
   Lightbulb,
   Menu,
@@ -80,7 +79,6 @@ const groups: NavGroup[] = [
   {
     label: "Extras",
     items: [
-      { href: "/tasks?tab=inbox", label: "Inbox", Icon: Inbox },
       { href: "/alerts", label: "Alertas", Icon: Bell },
       { href: "/settings", label: "Configuración", Icon: Settings },
     ],
