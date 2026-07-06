@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import type { ComponentType } from "react";
 import { AlertTriangle, ArrowRight, Boxes, CheckCircle2, Clock3, FolderKanban, Lock, Search, Snowflake, Target } from "lucide-react";
 import { useAppData as useData } from "@/components/use-app-data";
 import { labels, Status, days, TextWithLinks } from "@/components/workspace";
 import { ProjectActionMenu } from "@/components/projects/project-action-menu";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { SemanticBadge } from "@/components/visual-hierarchy";
@@ -100,11 +100,7 @@ function CompactFocus({ project }: { project: any | null }) {
   const t = projectTone(project);
   return (
     <Link href={`/projects/${project.id}`} className={`block rounded-xl border border-l-4 ${tone[t].rail} bg-white p-3 hover:bg-slate-50`}>
-      <div className="flex items-center gap-2">
-        <span className={`size-2 rounded-full ${tone[t].dot}`} />
-        <p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-950"><TextWithLinks value={project.name} /></p>
-        <ArrowRight className="size-4 text-slate-400" />
-      </div>
+      <div className="flex items-center gap-2"><span className={`size-2 rounded-full ${tone[t].dot}`} /><p className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-950"><TextWithLinks value={project.name} /></p><ArrowRight className="size-4 text-slate-400" /></div>
       <p className="mt-1 truncate text-xs text-slate-500">{projectReason(project)}</p>
     </Link>
   );
@@ -115,7 +111,7 @@ function MetricStrip({ stats, onSelect }: { stats: ReturnType<typeof getStats>; 
   return <div className="grid gap-2 sm:grid-cols-4">{items.map(([value, label, count, t]) => <button key={value} onClick={() => onSelect(value)} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left ${tone[t].soft}`}><span className={`size-2 rounded-full ${tone[t].dot}`} /><span className="min-w-0 flex-1 truncate text-xs font-semibold">{label}</span><span className="text-lg font-semibold leading-none">{count}</span></button>)}</div>;
 }
 
-function FilterButton({ value, label, count, active, onSelect, Icon }: { value: ProjectFilter; label: string; count: number; active: ProjectFilter; onSelect: (value: ProjectFilter) => void; Icon: React.ComponentType<{ className?: string }> }) {
+function FilterButton({ value, label, count, active, onSelect, Icon }: { value: ProjectFilter; label: string; count: number; active: ProjectFilter; onSelect: (value: ProjectFilter) => void; Icon: ComponentType<{ className?: string }> }) {
   const t = value === "blocked" || value === "attention" ? "critical" : value === "missing_next" ? "high" : value === "active" ? "medium" : value === "completed" || value === "production" ? "low" : "info";
   return <button type="button" onClick={() => onSelect(value)} className={`flex w-full items-center gap-2 rounded-lg border border-l-4 px-2.5 py-2 text-left text-sm transition ${active === value ? "border-slate-300 bg-white text-slate-950" : "border-slate-100 bg-transparent text-slate-600 hover:bg-white"} ${tone[t].rail}`}><Icon className="size-4 shrink-0" /><span className="min-w-0 flex-1 truncate">{label}</span><Badge variant="outline" className="h-5 rounded-full bg-white px-2 text-[11px]">{count}</Badge></button>;
 }
@@ -127,13 +123,9 @@ function ProjectRow({ project, areas, data, onUpdated, onArchived }: { project: 
   const overdue = project.tasks?.filter((task: any) => taskOverdue(task)).length || 0;
   const inFocus = [data?.focus?.mainProjectId, ...(data?.focus?.secondaryProjectIds || [])].includes(project.id);
   return (
-    <div className={`grid grid-cols-[minmax(260px,1.3fr)_140px_150px_120px_96px_40px] items-center gap-3 border-b border-slate-100 px-3 py-2.5 last:border-b-0 hover:bg-slate-50`}>
-      <div className="min-w-0 border-l-4 pl-2 ${tone[t].rail}">
-        <div className="flex min-w-0 items-center gap-2">
-          <FolderKanban className="size-4 shrink-0 text-slate-400" />
-          <Link href={`/projects/${project.id}`} className="truncate text-sm font-semibold text-slate-950 hover:underline"><TextWithLinks value={project.name} /></Link>
-          {inFocus ? <SemanticBadge value="focus" label="Foco" /> : null}
-        </div>
+    <div className="grid grid-cols-[minmax(260px,1.3fr)_140px_150px_120px_96px_40px] items-center gap-3 border-b border-slate-100 px-3 py-2.5 last:border-b-0 hover:bg-slate-50">
+      <div className={`min-w-0 border-l-4 pl-2 ${tone[t].rail}`}>
+        <div className="flex min-w-0 items-center gap-2"><FolderKanban className="size-4 shrink-0 text-slate-400" /><Link href={`/projects/${project.id}`} className="truncate text-sm font-semibold text-slate-950 hover:underline"><TextWithLinks value={project.name} /></Link>{inFocus ? <SemanticBadge value="focus" label="Foco" /> : null}</div>
         <p className="mt-0.5 truncate text-xs text-slate-500">{project.area?.name || "Sin área"} · {labels[project.maturity] || project.maturity || "sin madurez"}</p>
       </div>
       <div className="flex flex-wrap gap-1"><Status value={project.status} /><Status value={project.priority} /></div>
