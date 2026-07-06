@@ -116,8 +116,6 @@ function byScoreThenDate(a: DashboardRadarItem, b: DashboardRadarItem) {
 export async function getDashboardRadar(): Promise<DashboardRadar> {
   const db = getPrisma();
   const now = new Date();
-  const horizon = new Date(now);
-  horizon.setDate(now.getDate() + 45);
 
   const [tasks, projects, assets, ideas, alerts, lastActivity] = await Promise.all([
     db.task.findMany({
@@ -175,7 +173,7 @@ export async function getDashboardRadar(): Promise<DashboardRadar> {
       href: "/tasks",
       cta: "Ver tarea",
       meta: task.status === "blocked" ? "Bloqueada" : task.status === "waiting" ? "En espera" : dateMeta(task.dueDate, now),
-    };
+    } satisfies DashboardRadarItem;
   });
 
   const projectItems: DashboardRadarItem[] = projects.map((project) => {
@@ -203,7 +201,7 @@ export async function getDashboardRadar(): Promise<DashboardRadar> {
       href: `/projects/${project.id}`,
       cta: "Abrir proyecto",
       meta: project.status === "blocked" ? "Bloqueado" : project.status === "frozen" ? "Congelado" : missingNextAction ? "Sin próxima acción" : dateMeta(project.targetDate, now),
-    };
+    } satisfies DashboardRadarItem;
   });
 
   const assetItems: DashboardRadarItem[] = assets
@@ -223,7 +221,7 @@ export async function getDashboardRadar(): Promise<DashboardRadar> {
         href: "/assets",
         cta: "Abrir activo",
         meta: asset.status === "expired" ? "Expirado" : `Renovación · ${dateMeta(asset.renewalDate, now) || "sin fecha"}`,
-      };
+      } satisfies DashboardRadarItem;
     });
 
   const ideaItems: DashboardRadarItem[] = ideas
@@ -244,7 +242,7 @@ export async function getDashboardRadar(): Promise<DashboardRadar> {
         href: "/ideas",
         cta: "Revisar idea",
         meta: `Revisión · ${dateMeta(idea.reviewDate, now) || "sin fecha"}`,
-      };
+      } satisfies DashboardRadarItem;
     });
 
   const alertItems: DashboardRadarItem[] = alerts.map((alert) => {
@@ -261,7 +259,7 @@ export async function getDashboardRadar(): Promise<DashboardRadar> {
       href: "/alerts",
       cta: "Ver alerta",
       meta: "Alerta activa",
-    };
+    } satisfies DashboardRadarItem;
   });
 
   const priorityItems = [...taskItems, ...projectItems, ...assetItems, ...ideaItems, ...alertItems]
