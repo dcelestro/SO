@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 import {
-  AlertTriangle,
   ArrowRight,
   Bell,
   CalendarDays,
@@ -85,30 +84,11 @@ const kindLabels: Record<DashboardRadarItem["kind"], string> = {
 const kpiIcons: ComponentType<{ className?: string }>[] = [ClipboardList, Lock, Bell, Folder, ShieldAlert];
 
 export function DashboardView({ radar }: { radar: DashboardRadar }) {
-  const generatedAt = new Intl.DateTimeFormat("es-AR", { hour: "2-digit", minute: "2-digit" }).format(new Date(radar.generatedAt));
-
   return (
     <div className="space-y-5">
-      <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
-            <span className="size-2 rounded-full bg-emerald-500" />
-            Radar autoabastecido · actualizado {generatedAt}
-          </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Dashboard</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-500">
-            Centro visual de atención. Nexo prioriza automáticamente lo que requiere acción con datos de tareas, proyectos, activos, ideas, alertas y actividad.
-          </p>
-        </div>
-        <Button type="button" onClick={() => window.dispatchEvent(new Event("nexo:open-quick-create"))} className="h-11 rounded-xl bg-blue-600 px-5 font-semibold hover:bg-blue-700">
-          <Zap className="mr-2 size-4" />
-          Captura rápida
-        </Button>
-      </section>
-
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(430px,0.95fr)]">
         <HeroIssue item={radar.heroIssue} />
-        <KpiConsole kpis={radar.kpis} risk={radar.risk} />
+        <KpiConsole kpis={radar.kpis} />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,0.85fr)_minmax(0,0.9fr)_minmax(380px,0.95fr)]">
@@ -170,11 +150,7 @@ function HeroIssue({ item }: { item: DashboardRadarItem | null }) {
           <Zap className="size-9" />
         </div>
         <div className="pr-24">
-          <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-semibold ring-1 ${style.tint}`}>
-            <AlertTriangle className="size-4" />
-            Requiere tu atención ahora
-          </div>
-          <div className="mt-5 flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-2xl font-semibold tracking-tight text-slate-950"><TextWithLinks value={item.title} /></h2>
             <SeverityBadge severity={item.severity} />
           </div>
@@ -194,7 +170,7 @@ function HeroIssue({ item }: { item: DashboardRadarItem | null }) {
   );
 }
 
-function KpiConsole({ kpis, risk }: { kpis: DashboardKpi[]; risk: DashboardRadar["risk"] }) {
+function KpiConsole({ kpis }: { kpis: DashboardKpi[] }) {
   return (
     <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
       <CardContent className="p-0">
@@ -203,15 +179,6 @@ function KpiConsole({ kpis, risk }: { kpis: DashboardKpi[]; risk: DashboardRadar
             const Icon = kpiIcons[index] || ClipboardList;
             return <KpiTile key={kpi.label} kpi={kpi} icon={Icon} />;
           })}
-        </div>
-        <div className="border-t border-slate-100 bg-slate-50/80 px-5 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Lectura operativa</p>
-              <p className="mt-1 text-sm text-slate-600">{risk.summary}</p>
-            </div>
-            <Badge variant="outline" className={`rounded-full px-3 py-1 ${severityStyles[risk.severity].badge}`}>Riesgo {risk.label}</Badge>
-          </div>
         </div>
       </CardContent>
     </Card>
