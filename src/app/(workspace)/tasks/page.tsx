@@ -1,6 +1,8 @@
 import { TasksView } from "@/components/tasks/tasks-view";
 import { getPrisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function TasksPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const query = await searchParams;
   const tab = query.tab || "today";
@@ -10,17 +12,17 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   const tasks = await prisma.task.findMany({
     where: {
       status: {
-        notIn: ["completed", "discarded"]
-      }
+        notIn: ["completed", "discarded"],
+      },
     },
     include: {
       project: {
-        select: { id: true, name: true }
-      }
+        select: { id: true, name: true },
+      },
     },
     orderBy: {
-      createdAt: 'desc'
-    }
+      createdAt: "desc",
+    },
   });
 
   return <TasksView initialTasks={tasks as any} initialTab={tab} />;
