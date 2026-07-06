@@ -7,6 +7,10 @@ function iso(value: Date | null | undefined) {
   return value ? value.toISOString() : null;
 }
 
+function isoRequired(value: Date) {
+  return value.toISOString();
+}
+
 export default async function KpisPage() {
   const prisma = getPrisma();
 
@@ -107,30 +111,30 @@ export default async function KpisPage() {
           ...task,
           dueDate: iso(task.dueDate),
           completedAt: iso(task.completedAt),
-          createdAt: iso(task.createdAt),
-          updatedAt: iso(task.updatedAt),
+          createdAt: isoRequired(task.createdAt),
+          updatedAt: isoRequired(task.updatedAt),
         })),
         projects: projects.map((project) => ({
           ...project,
           targetDate: iso(project.targetDate),
-          createdAt: iso(project.createdAt),
-          updatedAt: iso(project.updatedAt),
+          createdAt: isoRequired(project.createdAt),
+          updatedAt: isoRequired(project.updatedAt),
         })),
         assets: assets.map((asset) => ({
           ...asset,
           renewalDate: iso(asset.renewalDate),
-          createdAt: iso(asset.createdAt),
-          updatedAt: iso(asset.updatedAt),
+          createdAt: isoRequired(asset.createdAt),
+          updatedAt: isoRequired(asset.updatedAt),
         })),
         ideas: ideas.map((idea) => ({
           ...idea,
           reviewDate: iso(idea.reviewDate),
-          createdAt: iso(idea.createdAt),
-          updatedAt: iso(idea.updatedAt),
+          createdAt: isoRequired(idea.createdAt),
+          updatedAt: isoRequired(idea.updatedAt),
         })),
         alerts: alerts.map((alert) => ({
           ...alert,
-          createdAt: iso(alert.createdAt),
+          createdAt: isoRequired(alert.createdAt),
           resolvedAt: iso(alert.resolvedAt),
         })),
         knowledge: { documents, boards },
