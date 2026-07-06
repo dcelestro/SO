@@ -3,73 +3,138 @@ import { getPrisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-const day = 24 * 60 * 60 * 1000;
-const now = () => new Date();
-const inDays = (amount: number) => new Date(now().getTime() + amount * day);
-const isPast = (value: Date | string | null | undefined) => Boolean(value && new Date(value).getTime() < now().getTime());
+function iso(value: Date | null | undefined) {
+  return value ? value.toISOString() : null;
+}
 
 export default async function KpisPage() {
   const prisma = getPrisma();
-  const next7 = inDays(7);
-  const next14 = inDays(14);
-  const next30 = inDays(30);
-  const last30 = new Date(now().getTime() - 30 * day);
 
-  const [tasks, projects, assets, ideas, alerts, documents, boards] = await Promise.all([
-    prisma.task.findMany({ include: { project: true, area: true }, orderBy: { updatedAt: "desc" } }),
-    prisma.project.findMany({ include: { area: true }, orderBy: { updatedAt: "desc" } }),
-    prisma.digitalAsset.findMany({ include: { project: true, area: true }, orderBy: { updatedAt: "desc" } }),
-    prisma.idea.findMany({ include: { project: true, area: true }, orderBy: { updatedAt: "desc" } }),
-    prisma.alert.findMany({ orderBy: { createdAt: "desc" } }),
-    prisma.document.findMany({ orderBy: { updatedAt: "desc" } }),
-    prisma.board.findMany({ orderBy: { updatedAt: "desc" } }),
+  const [areas, tasks, projects, assets, ideas, alerts, documents, boards] = await Promise.all([
+    prisma.area.findMany({
+      where: { status: { not: "archived" } },
+      select: { id: true, name: true, status: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.task.findMany({
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        priority: true,
+        dueDate: true,
+        isToday: true,
+        isCritical: true,
+        completedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        area: { select: { id: true, name: true } },
+        project: { select: { id: true, name: true, areaId: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.project.findMany({
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        priority: true,
+        maturity: true,
+        nextAction: true,
+        blockedReason: true,
+        progressPercentage: true,
+        targetDate: true,
+        createdAt: true,
+        updatedAt: true,
+        area: { select: { id: true, name: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.digitalAsset.findMany({
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        provider: true,
+        status: true,
+        renewalDate: true,
+        createdAt: true,
+        updatedAt: true,
+        area: { select: { id: true, name: true } },
+        project: { select: { id: true, name: true, areaId: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.idea.findMany({
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        origin: true,
+        potential: true,
+        complexity: true,
+        reviewDate: true,
+        createdAt: true,
+        updatedAt: true,
+        area: { select: { id: true, name: true } },
+        project: { select: { id: true, name: true, areaId: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.alert.findMany({
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        severity: true,
+        type: true,
+        createdAt: true,
+        resolvedAt: true,
+        area: { select: { id: true, name: true } },
+        project: { select: { id: true, name: true, areaId: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.document.count(),
+    prisma.board.count(),
   ]);
 
-  const openTasks = tasks.filter((task) => !["completed", "discarded"].includes(task.status));
-  const overdueTasks = openTasks.filter((task) => isPast(task.dueDate));
-  const dueSoonTasks = openTasks.filter((task) => task.dueDate && new Date(task.dueDate) <= next7 && !isPast(task.dueDate));
-  const completedLast30 = tasks.filter((task) => task.completedAt && new Date(task.completedAt) >= last30);
-  const blockedTasks = openTasks.filter((task) => ["blocked", "waiting"].includes(task.status));
-
-  const activeProjects = projects.filter((project) => project.status === "active");
-  const blockedProjects = projects.filter((project) => project.status === "blocked" || Boolean(project.blockedReason));
-  const frozenProjects = projects.filter((project) => project.status === "frozen" || project.isFrozen);
-  const withoutNextAction = activeProjects.filter((project) => !project.nextAction?.trim());
-  const targetSoon = projects.filter((project) => project.targetDate && new Date(project.targetDate) <= next14 && !["completed", "discarded"].includes(project.status));
-  const averageProgress = activeProjects.length ? Math.round(activeProjects.reduce((sum, project) => sum + project.progressPercentage, 0) / activeProjects.length) : 0;
-
-  const activeAssets = assets.filter((asset) => ["active", "pending"].includes(asset.status));
-  const renewalSoon = activeAssets.filter((asset) => asset.renewalDate && new Date(asset.renewalDate) <= next30);
-  const expiredAssets = assets.filter((asset) => asset.status === "expired" || isPast(asset.renewalDate));
-
-  const inboxIdeas = ideas.filter((idea) => idea.status === "inbox");
-  const promotedIdeas = ideas.filter((idea) => idea.status === "promoted");
-  const reviewSoon = inboxIdeas.filter((idea) => idea.reviewDate && new Date(idea.reviewDate) <= next14);
-
-  const activeAlerts = alerts.filter((alert) => alert.status === "active");
-
-  const riskyProjects = projects
-    .filter((project) => !["completed", "discarded"].includes(project.status))
-    .map((project) => {
-      const relatedTasks = openTasks.filter((task) => task.projectId === project.id);
-      const overdue = relatedTasks.filter((task) => isPast(task.dueDate)).length;
-      const blocked = project.status === "blocked" || Boolean(project.blockedReason);
-      const noNext = project.status === "active" && !project.nextAction?.trim();
-      const targetClose = project.targetDate && new Date(project.targetDate) <= next14;
-      const score = overdue * 3 + (blocked ? 4 : 0) + (noNext ? 3 : 0) + (targetClose ? 2 : 0);
-      return { id: project.id, name: project.name, status: project.status, priority: project.priority, score, overdue, blocked, noNext, targetDate: project.targetDate ? project.targetDate.toISOString() : null };
-    })
-    .filter((project) => project.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 6);
-
-  return <KpisView kpis={{
-    tasks: { total: tasks.length, open: openTasks.length, completedLast30: completedLast30.length, overdue: overdueTasks.length, dueSoon: dueSoonTasks.length, blocked: blockedTasks.length },
-    projects: { total: projects.length, active: activeProjects.length, blocked: blockedProjects.length, frozen: frozenProjects.length, withoutNextAction: withoutNextAction.length, targetSoon: targetSoon.length, averageProgress },
-    assets: { total: assets.length, active: activeAssets.length, renewalSoon: renewalSoon.length, expired: expiredAssets.length },
-    ideas: { total: ideas.length, inbox: inboxIdeas.length, promoted: promotedIdeas.length, reviewSoon: reviewSoon.length, conversionRate: ideas.length ? Math.round((promotedIdeas.length / ideas.length) * 100) : 0 },
-    alerts: { active: activeAlerts.length, critical: activeAlerts.filter((alert) => alert.severity === "critical").length, high: activeAlerts.filter((alert) => alert.severity === "high").length },
-    knowledge: { documents: documents.length, boards: boards.length },
-    riskyProjects,
-  }} />;
+  return (
+    <KpisView
+      data={{
+        areas,
+        tasks: tasks.map((task) => ({
+          ...task,
+          dueDate: iso(task.dueDate),
+          completedAt: iso(task.completedAt),
+          createdAt: iso(task.createdAt),
+          updatedAt: iso(task.updatedAt),
+        })),
+        projects: projects.map((project) => ({
+          ...project,
+          targetDate: iso(project.targetDate),
+          createdAt: iso(project.createdAt),
+          updatedAt: iso(project.updatedAt),
+        })),
+        assets: assets.map((asset) => ({
+          ...asset,
+          renewalDate: iso(asset.renewalDate),
+          createdAt: iso(asset.createdAt),
+          updatedAt: iso(asset.updatedAt),
+        })),
+        ideas: ideas.map((idea) => ({
+          ...idea,
+          reviewDate: iso(idea.reviewDate),
+          createdAt: iso(idea.createdAt),
+          updatedAt: iso(idea.updatedAt),
+        })),
+        alerts: alerts.map((alert) => ({
+          ...alert,
+          createdAt: iso(alert.createdAt),
+          resolvedAt: iso(alert.resolvedAt),
+        })),
+        knowledge: { documents, boards },
+      }}
+    />
+  );
 }
