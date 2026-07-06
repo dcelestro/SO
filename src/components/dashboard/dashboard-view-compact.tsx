@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowRight, CalendarDays, CheckCircle2, Clock3, Target, Zap } from "lucide-react";
+import type { ReactNode } from "react";
+import { ArrowRight, CalendarDays, CheckCircle2, Target, Zap } from "lucide-react";
 import type { DashboardRadar, DashboardRadarItem, DashboardSeverity } from "@/lib/dashboard-radar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Empty, TextWithLinks, fmt } from "@/components/workspace";
+import { Empty, TextWithLinks, fmt, days } from "@/components/workspace";
 
 const severityLabel: Record<DashboardSeverity, string> = {
   critical: "Crítica",
@@ -34,6 +35,8 @@ const kindLabels: Record<DashboardRadarItem["kind"], string> = {
 };
 
 export function DashboardView({ radar }: { radar: DashboardRadar }) {
+  const weekItems = getWeekItems(radar.calendarItems);
+
   return (
     <div className="relative left-1/2 right-1/2 ml-[-50vw] mr-[-50vw] w-screen min-h-[calc(100vh-8rem)] bg-[#f1f3f6]">
       <div className="mx-auto max-w-7xl px-4 py-4 md:px-7">
@@ -41,41 +44,53 @@ export function DashboardView({ radar }: { radar: DashboardRadar }) {
           <Card className="overflow-hidden border border-slate-200 bg-white shadow-sm ring-1 ring-slate-200/70">
             <div className="grid lg:grid-cols-[minmax(0,1fr)_420px]">
               <Hero item={radar.heroIssue} />
-              <div className="grid border-t border-slate-100 sm:grid-cols-5 lg:border-l lg:border-t-0">
-                {radar.kpis.map((kpi) => (
-                  <Link key={kpi.label} href={kpi.href} className="group flex items-center gap-2 border-r border-slate-100 px-3 py-3 last:border-r-0 hover:bg-slate-50">
-                    <span className={`size-2 rounded-full ${severity[kpi.severity].dot}`} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[11px] font-semibold text-slate-500">{kpi.label}</span>
-                      <span className={`block text-xl font-semibold leading-6 ${severity[kpi.severity].text}`}>{kpi.value}</span>
-                    </span>
-                  </Link>
-                ))}
-              </div>
+              <KpiStrip radar={radar} />
             </div>
           </Card>
 
-          <section className="grid gap-3 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,0.85fr)_minmax(0,0.9fr)_minmax(360px,0.95fr)]">
+          <section className="grid gap-3 xl:grid-cols-[minmax(0,1.15fr)_420px]">
+            <OperationalCalendar items={radar.calendarItems} />
+            <div className="space-y-3">
+              <Panel title="Esta semana" count={weekItems.length} href="/tasks" accent="medium">
+                <ItemList items={weekItems.slice(0, 7)} empty="Sin señales programadas esta semana." dense={false} />
+              </Panel>
+              <Panel title="Próximas señales" count={radar.upcomingSignals.length} href="/alerts" accent="info">
+                <ItemList items={radar.upcomingSignals.slice(0, 3)} empty="Sin señales próximas." />
+              </Panel>
+            </div>
+          </section>
+
+          <section className="grid gap-3 xl:grid-cols-3">
             <Panel title="Prioritario" count={radar.priorityItems.length} href="/tasks" accent="critical">
-              <ItemList items={radar.priorityItems.slice(0, 6)} empty="No hay señales críticas o altas abiertas." />
+              <ItemList items={radar.priorityItems.slice(0, 3)} empty="No hay señales críticas o altas abiertas." />
             </Panel>
             <Panel title="Hoy" count={radar.todayItems.length} href="/tasks" accent="medium">
-              <ItemList items={radar.todayItems.slice(0, 5)} empty="Nada venciendo hoy." />
+              <ItemList items={radar.todayItems.slice(0, 3)} empty="Nada venciendo hoy." />
             </Panel>
             <Panel title="Trabado / esperando" count={radar.waitingItems.length} href="/projects" accent="high">
-              <ItemList items={radar.waitingItems.slice(0, 5)} empty="No hay bloqueos ni esperas activas." />
+              <ItemList items={radar.waitingItems.slice(0, 3)} empty="No hay bloqueos ni esperas activas." />
             </Panel>
-            <div className="space-y-3">
-              <Panel title="Próximas señales" count={radar.upcomingSignals.length} href="/alerts" accent="info">
-                <ItemList items={radar.upcomingSignals.slice(0, 5)} empty="Sin señales próximas." />
-              </Panel>
-              <OperationalCalendar items={radar.calendarItems} />
-            </div>
           </section>
 
           <LastProgress progress={radar.lastProgress} />
         </div>
       </div>
+    </div>
+  );
+}
+
+function KpiStrip({ radar }: { radar: DashboardRadar }) {
+  return (
+    <div className="grid border-t border-slate-100 sm:grid-cols-5 lg:border-l lg:border-t-0">
+      {radar.kpis.map((kpi) => (
+        <Link key={kpi.label} href={kpi.href} className="group flex items-center gap-2 border-r border-slate-100 px-3 py-3 last:border-r-0 hover:bg-slate-50">
+          <span className={`size-2 rounded-full ${severity[kpi.severity].dot}`} />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[11px] font-semibold text-slate-500">{kpi.label}</span>
+            <span className={`block text-xl font-semibold leading-6 ${severity[kpi.severity].text}`}>{kpi.value}</span>
+          </span>
+        </Link>
+      ))}
     </div>
   );
 }
@@ -114,7 +129,7 @@ function Hero({ item }: { item: DashboardRadarItem | null }) {
   );
 }
 
-function Panel({ title, count, href, accent, children }: { title: string; count: number; href: string; accent: DashboardSeverity; children: React.ReactNode }) {
+function Panel({ title, count, href, accent, children }: { title: string; count: number; href: string; accent: DashboardSeverity; children: ReactNode }) {
   return (
     <Card className={`overflow-hidden border border-l-4 ${severity[accent].rail} border-slate-200 bg-white shadow-sm ring-1 ring-slate-200/70`}>
       <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 border-b border-slate-100 px-3 py-2">
@@ -129,13 +144,13 @@ function Panel({ title, count, href, accent, children }: { title: string; count:
   );
 }
 
-function ItemList({ items, empty }: { items: DashboardRadarItem[]; empty: string }) {
-  return <div className="space-y-1.5">{items.length ? items.map((item) => <ItemRow key={item.id} item={item} />) : <Empty text={empty} />}</div>;
+function ItemList({ items, empty, dense = true }: { items: DashboardRadarItem[]; empty: string; dense?: boolean }) {
+  return <div className="space-y-1.5">{items.length ? items.map((item) => <ItemRow key={item.id} item={item} dense={dense} />) : <Empty text={empty} />}</div>;
 }
 
-function ItemRow({ item }: { item: DashboardRadarItem }) {
+function ItemRow({ item, dense }: { item: DashboardRadarItem; dense: boolean }) {
   return (
-    <Link href={item.href} className={`group flex items-center gap-2 rounded-lg border px-2.5 py-2 transition ${severity[item.severity].row}`}>
+    <Link href={item.href} className={`group flex items-center gap-2 rounded-lg border px-2.5 ${dense ? "py-2" : "py-2.5"} transition ${severity[item.severity].row}`}>
       <span className={`size-2 shrink-0 rounded-full ${severity[item.severity].dot}`} />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium text-slate-950"><TextWithLinks value={item.title} /></span>
@@ -197,19 +212,25 @@ function OperationalCalendar({ items }: { items: DashboardRadarItem[] }) {
   return (
     <Panel title="Calendario operativo" count={items.length} href="/tasks" accent="info">
       <div className="mb-2 flex items-center justify-between gap-3"><p className="text-sm font-semibold capitalize text-slate-900">{new Intl.DateTimeFormat("es-AR", { month: "long", year: "numeric" }).format(monthDate)}</p><div className="flex items-center gap-1 text-xs text-slate-500"><CalendarDays className="size-3.5" /> señales</div></div>
-      <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-medium text-slate-400">{["L", "M", "M", "J", "V", "S", "D"].map((day, index) => <div key={`${day}-${index}`} className="py-0.5">{day}</div>)}</div>
+      <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-slate-400">{["L", "M", "M", "J", "V", "S", "D"].map((day, index) => <div key={`${day}-${index}`} className="py-1">{day}</div>)}</div>
       <div className="grid grid-cols-7 gap-1">
         {cells.map((cell, index) => {
           const key = cell ? dateKey(cell) : `empty-${index}`;
           const dayItems = cell ? itemsByDate.get(dateKey(cell)) || [] : [];
           const isToday = cell && dateKey(cell) === dateKey(new Date(TODAY));
           const selected = cell && dateKey(cell) === selectedDate;
-          return <button key={key} type="button" disabled={!cell} onClick={() => cell && setSelectedDate(dateKey(cell))} className={`relative h-8 rounded-md border text-[11px] transition ${!cell ? "border-transparent bg-transparent" : selected ? "border-slate-950 bg-slate-950 text-white" : isToday ? "border-amber-300 bg-amber-50 text-slate-950" : dayItems.length ? "border-slate-200 bg-white hover:border-slate-400" : "border-slate-100 bg-white hover:border-slate-300"}`}>{cell ? cell.getDate() : ""}{dayItems.length ? <span className="absolute bottom-0.5 left-1/2 flex -translate-x-1/2 gap-0.5">{dayItems.slice(0, 3).map((item) => <span key={item.id} className={`size-1 rounded-full ${severity[item.severity].dot}`} />)}</span> : null}</button>;
+          return <button key={key} type="button" disabled={!cell} onClick={() => cell && setSelectedDate(dateKey(cell))} className={`relative h-11 rounded-lg border text-xs transition ${!cell ? "border-transparent bg-transparent" : selected ? "border-slate-950 bg-slate-950 text-white" : isToday ? "border-amber-300 bg-amber-50 text-slate-950" : dayItems.length ? "border-slate-200 bg-white hover:border-slate-400" : "border-slate-100 bg-white hover:border-slate-300"}`}>{cell ? cell.getDate() : ""}{dayItems.length ? <span className="absolute bottom-1 left-1/2 flex -translate-x-1/2 gap-0.5">{dayItems.slice(0, 4).map((item) => <span key={item.id} className={`size-1.5 rounded-full ${severity[item.severity].dot}`} />)}</span> : null}</button>;
         })}
       </div>
       <div className="mt-2 space-y-1.5">
-        {selectedItems.length ? selectedItems.slice(0, 3).map((item) => <ItemRow key={item.id} item={item} />) : <p className="rounded-lg border border-dashed border-slate-200 px-3 py-3 text-center text-sm text-slate-500">Sin elementos para ese día.</p>}
+        {selectedItems.length ? selectedItems.slice(0, 4).map((item) => <ItemRow key={item.id} item={item} dense />) : <p className="rounded-lg border border-dashed border-slate-200 px-3 py-3 text-center text-sm text-slate-500">Sin elementos para ese día.</p>}
       </div>
     </Panel>
   );
+}
+
+function getWeekItems(items: DashboardRadarItem[]) {
+  return items
+    .filter((item) => item.date && days(item.date) >= 0 && days(item.date) <= 7)
+    .sort((a, b) => days(a.date) - days(b.date));
 }
