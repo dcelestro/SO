@@ -1,30 +1,35 @@
 import { NextResponse } from "next/server";
 import { getPrisma } from "@/lib/prisma";
 import { requireApiSession } from "@/lib/api-auth";
+
 export const dynamic = "force-dynamic";
+
 export async function GET() {
   const unauthorized = await requireApiSession();
   if (unauthorized) return unauthorized;
+
   try {
-    const db = getPrisma(),
-      now = new Date(),
-      week = new Date(now);
+    const db = getPrisma();
+    const now = new Date();
+    const week = new Date(now);
     week.setDate(now.getDate() - 7);
     const horizon = new Date(now);
     horizon.setDate(now.getDate() + 30);
+
     const [
       weeklyFocus,
       criticalTasks,
       overdueTasks,
       attentionProjects,
-      upcomingDueItems,
+      upcomingAssets,
+      upcomingIdeas,
       active,
       blocked,
       frozen,
       pending,
       completed,
       ideas,
-      reviews,
+      activeAlerts,
     ] = await Promise.all([
       db.weeklyFocus.findFirst({
         orderBy: { weekStartDate: "desc" },
@@ -36,17 +41,14 @@ export async function GET() {
       }),
       db.task.findMany({
         where: {
-          status: { not: "completed" },
-          OR: [
-            { isCritical: true },
-            { priority: { in: ["critical", "high"] } },
-          ],
+          status: { notIn: ["completed", "discarded"] },
+          OR: [{ isCritical: true }, { priority: { in: ["critical", "high"] } }],
         },
         include: { project: true },
         take: 8,
       }),
       db.task.findMany({
-        where: { status: { not: "completed" }, dueDate: { lt: now } },
+        where: { status: { notIn: ["completed", "discarded"] }, dueDate: { lt: now } },
         include: { project: true },
         take: 8,
       }),
@@ -61,37 +63,39 @@ export async function GET() {
         include: { area: true },
         take: 8,
       }),
-      db.dueItem.findMany({
-        where: { status: "pending", dueDate: { lte: horizon } },
+      db.digitalAsset.findMany({
+        where: {
+          status: { in: ["active", "pending"] },
+          renewalDate: { not: null, lte: horizon },
+        },
         include: { project: true },
-        orderBy: { dueDate: "asc" },
+        orderBy: { renewalDate: "asc" },
+      }),
+      db.idea.findMany({
+        where: {
+          status: "inbox",
+          reviewDate: { not: null, lte: horizon },
+        },
+        include: { project: true },
+        orderBy: { reviewDate: "asc" },
       }),
       db.project.count({ where: { status: "active" } }),
       db.project.count({ where: { status: "blocked" } }),
       db.project.count({ where: { status: "frozen" } }),
       db.task.count({
-        where: {
-          status: {
-            in: ["inbox", "pending", "in_progress", "waiting", "blocked"],
-          },
-        },
+        where: { status: { in: ["inbox", "pending", "in_progress", "waiting", "blocked"] } },
       }),
-      db.task.count({
-        where: { status: "completed", completedAt: { gte: week } },
-      }),
-      db.idea.count({
-        where: { status: { notIn: ["archived", "promoted"] } },
-      }),
-      db.review.count({
-        where: { status: "pending", nextReviewDate: { lt: now } },
-      }),
+      db.task.count({ where: { status: "completed", completedAt: { gte: week } } }),
+      db.idea.count({ where: { status: { notIn: ["archived", "promoted"] } } }),
+      db.alert.count({ where: { status: "active" } }),
     ]);
+
     return NextResponse.json({
       weeklyFocus,
       criticalTasks,
       overdueTasks,
       attentionProjects,
-      upcomingDueItems,
+      upcomingSignals: [...upcomingAssets, ...upcomingIdeas],
       kpis: {
         activeProjects: active,
         blockedProjects: blocked,
@@ -99,17 +103,12 @@ export async function GET() {
         pendingTasks: pending,
         completedThisWeek: completed,
         ideas,
-        reviewsOverdue: reviews,
-        upcomingDueItems: upcomingDueItems.length,
-        projectsWithoutNextAction: attentionProjects.filter(
-          (p) => p.status === "active" && !p.nextAction,
-        ).length,
+        activeAlerts,
+        upcomingSignals: upcomingAssets.length + upcomingIdeas.length,
+        projectsWithoutNextAction: attentionProjects.filter((project) => project.status === "active" && !project.nextAction).length,
       },
     });
   } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Error" }, { status: 500 });
   }
 }
