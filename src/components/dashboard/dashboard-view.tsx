@@ -2,229 +2,330 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Header, Empty, Status, fmt, days, TextWithLinks } from "@/components/workspace";
+import type { ComponentType, ReactNode } from "react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Bell,
+  CalendarDays,
+  CheckCircle2,
+  ClipboardList,
+  Clock3,
+  Folder,
+  Lock,
+  ShieldAlert,
+  Target,
+  Zap,
+} from "lucide-react";
+import type { DashboardKpi, DashboardRadar, DashboardRadarItem, DashboardSeverity } from "@/lib/dashboard-radar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Empty, TextWithLinks, fmt, days } from "@/components/workspace";
 
-export function DashboardView({ data }: { data: { tasks: any[]; projects: any[]; assets: any[]; ideas: any[] } }) {
-  const openTasks = data.tasks;
-  const projectById = new Map(data.projects.map((project) => [project.id, project]));
-  const priorityRank: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
+const severityLabel: Record<DashboardSeverity, string> = {
+  critical: "Crítica",
+  high: "Alta",
+  medium: "Media",
+  low: "Baja",
+  info: "Info",
+};
 
-  const taskScore = (task: any) =>
-    (priorityRank[task.priority] ?? 0) * 20 +
-    (task.dueDate && days(task.dueDate) < 0 ? 30 : 0) +
-    (task.dueDate && days(task.dueDate) === 0 ? 22 : 0) +
-    (task.isCritical ? 18 : 0) +
-    (task.status === "blocked" ? 16 : 0) +
-    (task.status === "waiting" ? 10 : 0);
+const severityStyles: Record<DashboardSeverity, { badge: string; row: string; dot: string; tint: string; text: string; border: string }> = {
+  critical: {
+    badge: "border-red-200 bg-red-50 text-red-700 hover:bg-red-50",
+    row: "border-red-200 bg-red-50/75 hover:bg-red-50",
+    dot: "bg-red-500",
+    tint: "bg-red-50 text-red-700 ring-red-100",
+    text: "text-red-700",
+    border: "border-red-300",
+  },
+  high: {
+    badge: "border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50",
+    row: "border-orange-200 bg-orange-50/70 hover:bg-orange-50",
+    dot: "bg-orange-500",
+    tint: "bg-orange-50 text-orange-700 ring-orange-100",
+    text: "text-orange-700",
+    border: "border-orange-300",
+  },
+  medium: {
+    badge: "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-50",
+    row: "border-blue-200 bg-blue-50/60 hover:bg-blue-50",
+    dot: "bg-blue-500",
+    tint: "bg-blue-50 text-blue-700 ring-blue-100",
+    text: "text-blue-700",
+    border: "border-blue-300",
+  },
+  low: {
+    badge: "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50",
+    row: "border-emerald-200 bg-emerald-50/55 hover:bg-emerald-50",
+    dot: "bg-emerald-500",
+    tint: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+    text: "text-emerald-700",
+    border: "border-emerald-300",
+  },
+  info: {
+    badge: "border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-50",
+    row: "border-slate-200 bg-white hover:bg-slate-50",
+    dot: "bg-slate-400",
+    tint: "bg-slate-50 text-slate-600 ring-slate-100",
+    text: "text-slate-600",
+    border: "border-slate-200",
+  },
+};
 
-  const priorityTasks = [...openTasks]
-    .filter((task) => ["critical", "high"].includes(task.priority) || task.isCritical || task.status === "blocked" || Boolean(task.dueDate && days(task.dueDate) <= 0))
-    .sort((a, b) => taskScore(b) - taskScore(a) || (a.dueDate ? days(a.dueDate) : 999) - (b.dueDate ? days(b.dueDate) : 999));
+const kindLabels: Record<DashboardRadarItem["kind"], string> = {
+  task: "Tarea",
+  project: "Proyecto",
+  asset: "Activo",
+  idea: "Idea",
+  alert: "Alerta",
+};
 
-  const todayTasks = openTasks
-    .filter((task) => task.isToday || Boolean(task.dueDate && days(task.dueDate) === 0))
-    .sort((a, b) => taskScore(b) - taskScore(a));
+const kpiIcons: ComponentType<{ className?: string }>[] = [ClipboardList, Lock, Bell, Folder, ShieldAlert];
 
-  const weekTasks = openTasks
-    .filter((task) => task.dueDate && days(task.dueDate) >= 0 && days(task.dueDate) <= 7)
-    .sort((a, b) => days(a.dueDate!) - days(b.dueDate!));
-
-  const activeProjects = data.projects.filter((project) => project.status === "active");
-  const blockedTasks = openTasks.filter((task) => ["blocked", "waiting"].includes(task.status));
-  const blockedProjects = data.projects.filter((project) => project.status === "blocked");
-
-  const waitingItems = [
-    ...blockedTasks.map((task) => ({
-      id: `task-${task.id}`,
-      title: task.title,
-      subtitle: task.project?.name || projectById.get(task.projectId || "")?.name || "Inbox",
-      status: task.status,
-      priority: task.priority,
-      href: "/tasks",
-    })),
-    ...blockedProjects.map((project) => ({
-      id: `project-${project.id}`,
-      title: project.name,
-      subtitle: project.nextAction || project.description || "Proyecto detenido",
-      status: project.status,
-      priority: project.priority,
-      href: `/projects/${project.id}`,
-    })),
-  ].sort((a, b) => Number(b.status === "blocked") - Number(a.status === "blocked") || (priorityRank[b.priority] ?? 0) - (priorityRank[a.priority] ?? 0));
-
-  const signalItems = [
-    ...openTasks
-      .filter((task) => task.dueDate)
-      .map((task) => ({
-        id: `task-${task.id}`,
-        title: task.title,
-        subtitle: task.project?.name || projectById.get(task.projectId || "")?.name || "Inbox",
-        date: task.dueDate!,
-        kind: "Tarea",
-        tone: task.status === "blocked" || days(task.dueDate!) < 0 ? "critical" : task.priority,
-        href: "/tasks",
-      })),
-    ...data.assets
-      .filter((asset) => asset.renewalDate)
-      .map((asset) => ({
-        id: `asset-${asset.id}`,
-        title: asset.name,
-        subtitle: asset.provider || asset.project?.name || "Activo digital",
-        date: asset.renewalDate!,
-        kind: "Renovación",
-        tone: days(asset.renewalDate!) < 0 ? "critical" : "high",
-        href: "/assets",
-      })),
-    ...data.ideas
-      .filter((idea) => idea.reviewDate)
-      .map((idea) => ({
-        id: `idea-${idea.id}`,
-        title: idea.title,
-        subtitle: idea.project?.name || "Idea en incubadora",
-        date: idea.reviewDate!,
-        kind: "Revisión de idea",
-        tone: days(idea.reviewDate!) < 0 ? "medium" : "low",
-        href: "/ideas",
-      })),
-    ...data.projects
-      .filter((project) => project.targetDate)
-      .map((project) => ({
-        id: `project-${project.id}`,
-        title: project.name,
-        subtitle: project.nextAction || "Fecha objetivo",
-        date: project.targetDate!,
-        kind: "Proyecto",
-        tone: days(project.targetDate!) < 0 ? "critical" : project.priority,
-        href: `/projects/${project.id}`,
-      })),
-  ].sort((a, b) => days(a.date) - days(b.date));
+export function DashboardView({ radar }: { radar: DashboardRadar }) {
+  const generatedAt = new Intl.DateTimeFormat("es-AR", { hour: "2-digit", minute: "2-digit" }).format(new Date(radar.generatedAt));
 
   return (
-    <>
-      <Header title="Dashboard" desc="" />
-      <div className="mb-4 grid gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
-        <DashboardPanel title="Prioritario" count={priorityTasks.length}>
-          <DashboardTaskList tasks={priorityTasks.slice(0, 8)} projectById={projectById} empty="No hay prioridades abiertas." />
-        </DashboardPanel>
-        <div className="space-y-4">
-          <DashboardPanel title="Proyectos activos">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="text-5xl font-semibold tracking-tight text-slate-950">{activeProjects.length}</p>
-                <p className="mt-1 text-sm text-slate-500">frentes en movimiento</p>
-              </div>
-              <Button asChild variant="outline" size="sm"><Link href="/projects">Ver proyectos</Link></Button>
-            </div>
-            <div className="mt-4 space-y-2">
-              {activeProjects.slice(0, 5).map((project) => (
-                <div key={project.id} className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2">
-                  <span className="truncate text-sm font-medium">{project.name}</span>
-                  <Status value={project.priority} />
-                </div>
-              ))}
-            </div>
-          </DashboardPanel>
-          <DashboardPanel title="Próximas señales" count={signalItems.length}>
-            <DashboardSignalList items={signalItems.slice(0, 5)} empty="No hay señales próximas." />
-          </DashboardPanel>
-        </div>
-      </div>
-      <div className="grid gap-4 xl:grid-cols-4">
-        <DashboardPanel title="Trabado / esperando" count={waitingItems.length}>
-          <div className="space-y-2">
-            {waitingItems.length ? waitingItems.slice(0, 8).map((item) => (
-              <Link key={item.id} href={item.href} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2.5 hover:bg-slate-50">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-slate-950">{item.title}</p>
-                  <p className="truncate text-xs text-slate-500">{item.subtitle}</p>
-                </div>
-                <Status value={item.status} />
-              </Link>
-            )) : <Empty text="No hay bloqueos ni esperas externas." />}
+    <div className="space-y-5">
+      <section className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+            <span className="size-2 rounded-full bg-emerald-500" />
+            Radar autoabastecido · actualizado {generatedAt}
           </div>
-        </DashboardPanel>
-        <DashboardPanel title="Hoy" count={todayTasks.length}>
-          <DashboardTaskList tasks={todayTasks.slice(0, 6)} projectById={projectById} empty="Nada marcado para hoy." />
-        </DashboardPanel>
-        <DashboardPanel title="Esta semana" count={weekTasks.length}>
-          <DashboardTaskList tasks={weekTasks.slice(0, 7)} projectById={projectById} empty="No hay tareas con fecha esta semana." />
-        </DashboardPanel>
-        <DashboardCalendar items={signalItems} />
-      </div>
-    </>
+          <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Dashboard</h1>
+          <p className="mt-1 max-w-2xl text-sm text-slate-500">
+            Centro visual de atención. Nexo prioriza automáticamente lo que requiere acción con datos de tareas, proyectos, activos, ideas, alertas y actividad.
+          </p>
+        </div>
+        <Button asChild className="h-11 rounded-xl bg-blue-600 px-5 font-semibold hover:bg-blue-700">
+          <Link href="/tasks">
+            <Zap className="mr-2 size-4" />
+            Captura rápida
+          </Link>
+        </Button>
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(430px,0.95fr)]">
+        <HeroIssue item={radar.heroIssue} />
+        <KpiConsole kpis={radar.kpis} risk={radar.risk} />
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,0.85fr)_minmax(0,0.9fr)_minmax(380px,0.95fr)]">
+        <RadarPanel title="Prioritario" count={radar.priorityItems.length} actionHref="/tasks" actionLabel="Ver todo">
+          <ItemList items={radar.priorityItems.slice(0, 6)} empty="No hay señales críticas o altas abiertas." />
+        </RadarPanel>
+        <RadarPanel title="Hoy" count={radar.todayItems.length} actionHref="/tasks" actionLabel="Ver agenda">
+          <ItemList items={radar.todayItems.slice(0, 5)} empty="Nada venciendo hoy. Buen momento para avanzar." compact />
+        </RadarPanel>
+        <RadarPanel title="Trabado / esperando" count={radar.waitingItems.length} actionHref="/projects" actionLabel="Ver bloqueos">
+          <ItemList items={radar.waitingItems.slice(0, 5)} empty="No hay bloqueos ni esperas activas." compact />
+          {radar.waitingItems.length ? (
+            <Link href="/projects" className="mt-3 flex items-center justify-between rounded-xl border border-blue-100 bg-blue-50 px-3 py-3 text-sm text-blue-700 hover:bg-blue-100">
+              <span>{radar.waitingItems.length} señal{radar.waitingItems.length === 1 ? "" : "es"} deteniendo avance</span>
+              <ArrowRight className="size-4" />
+            </Link>
+          ) : null}
+        </RadarPanel>
+        <div className="space-y-4">
+          <RadarPanel title="Próximas señales" count={radar.upcomingSignals.length} actionHref="/alerts" actionLabel="Ver todas">
+            <ItemList items={radar.upcomingSignals.slice(0, 5)} empty="Sin señales próximas en el horizonte." compact />
+          </RadarPanel>
+          <OperationalCalendar items={radar.calendarItems} />
+        </div>
+      </section>
+
+      <LastProgressCard progress={radar.lastProgress} />
+    </div>
   );
 }
 
-type DashboardCalendarItem = {
-  id: string;
-  title: string;
-  subtitle: string;
-  date: string;
-  kind: string;
-  tone: string;
-  href: string;
-};
+function HeroIssue({ item }: { item: DashboardRadarItem | null }) {
+  if (!item) {
+    return (
+      <Card className="overflow-hidden border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-white shadow-sm">
+        <CardContent className="flex min-h-[220px] flex-col justify-between p-6">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700">
+              <CheckCircle2 className="size-4" />
+              Todo bajo control
+            </div>
+            <h2 className="mt-5 text-2xl font-semibold tracking-tight text-slate-950">No hay señales urgentes abiertas.</h2>
+            <p className="mt-2 max-w-xl text-sm text-slate-500">El radar no detectó bloqueos, vencimientos críticos ni alertas altas.</p>
+          </div>
+          <Button asChild variant="outline" className="w-fit rounded-xl">
+            <Link href="/tasks">Revisar tareas</Link>
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
-function DashboardPanel({ title, count, children }: { title: string; count?: number; children: React.ReactNode }) {
+  const style = severityStyles[item.severity];
+
   return (
-    <Card className="overflow-hidden border-slate-200 shadow-none">
-      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 pb-3">
-        <CardTitle className="text-base">{title}</CardTitle>
-        {typeof count === "number" ? <Badge variant="outline" className="rounded-full">{count}</Badge> : null}
-      </CardHeader>
-      <CardContent>{children}</CardContent>
+    <Card className={`overflow-hidden border-l-4 ${style.border} bg-gradient-to-br from-white via-white to-slate-50 shadow-sm`}>
+      <CardContent className="relative flex min-h-[260px] flex-col justify-between p-6">
+        <div className="absolute right-6 top-7 grid size-20 place-items-center rounded-full bg-red-50 text-red-600 ring-1 ring-red-100">
+          <Zap className="size-9" />
+        </div>
+        <div className="pr-24">
+          <div className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-semibold ring-1 ${style.tint}`}>
+            <AlertTriangle className="size-4" />
+            Requiere tu atención ahora
+          </div>
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <h2 className="text-2xl font-semibold tracking-tight text-slate-950"><TextWithLinks value={item.title} /></h2>
+            <SeverityBadge severity={item.severity} />
+          </div>
+          <p className="mt-2 text-sm font-medium text-slate-500">{kindLabels[item.kind]} · {item.subtitle}{item.meta ? ` · ${item.meta}` : ""}</p>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">{item.description || "Esta señal concentra el mayor riesgo operativo detectado por Nexo en este momento."}</p>
+        </div>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Button asChild className="rounded-xl bg-slate-950 px-5 font-semibold hover:bg-slate-800">
+            <Link href={item.href}>{item.cta}<ArrowRight className="ml-2 size-4" /></Link>
+          </Button>
+          <Button asChild variant="outline" className="rounded-xl">
+            <Link href="/alerts">Ver radar completo</Link>
+          </Button>
+        </div>
+      </CardContent>
     </Card>
   );
 }
 
-function DashboardTaskList({ tasks, projectById, empty }: { tasks: any[]; projectById: Map<string, any>; empty: string }) {
+function KpiConsole({ kpis, risk }: { kpis: DashboardKpi[]; risk: DashboardRadar["risk"] }) {
   return (
-    <div className="space-y-2">
-      {tasks.length ? tasks.map((task) => <DashboardTaskRow key={task.id} task={task} project={task.project || projectById.get(task.projectId || "")} />) : <Empty text={empty} />}
-    </div>
+    <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
+      <CardContent className="p-0">
+        <div className="grid divide-y divide-slate-100 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-5">
+          {kpis.map((kpi, index) => {
+            const Icon = kpiIcons[index] || ClipboardList;
+            return <KpiTile key={kpi.label} kpi={kpi} icon={Icon} />;
+          })}
+        </div>
+        <div className="border-t border-slate-100 bg-slate-50/80 px-5 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Lectura operativa</p>
+              <p className="mt-1 text-sm text-slate-600">{risk.summary}</p>
+            </div>
+            <Badge variant="outline" className={`rounded-full px-3 py-1 ${severityStyles[risk.severity].badge}`}>Riesgo {risk.label}</Badge>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
-function DashboardTaskRow({ task, project }: { task: any; project?: any }) {
-  const overdue = Boolean(task.dueDate && days(task.dueDate) < 0);
-  const today = Boolean(task.dueDate && days(task.dueDate) === 0);
+function KpiTile({ kpi, icon: Icon }: { kpi: DashboardKpi; icon: ComponentType<{ className?: string }> }) {
+  const style = severityStyles[kpi.severity];
   return (
-    <div className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${overdue || task.status === "blocked" ? "border-red-200 bg-red-50/70" : today || task.priority === "critical" ? "border-amber-200 bg-amber-50/70" : "border-slate-200 bg-white"}`}>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-slate-950"><TextWithLinks value={task.title} /></p>
-        <p className="mt-0.5 truncate text-xs text-slate-500">{project?.name || "Inbox"}{task.dueDate ? ` · ${overdue ? "Vencida" : fmt(task.dueDate)}` : ""}</p>
+    <Link href={kpi.href} className="group block p-5 transition hover:bg-slate-50">
+      <div className={`mb-4 grid size-9 place-items-center rounded-xl ring-1 ${style.tint}`}>
+        <Icon className="size-4" />
       </div>
-      <div className="flex shrink-0 items-center gap-1.5">
-        <Status value={task.priority} />
-        {task.status === "blocked" || task.status === "waiting" ? <Status value={task.status} /> : null}
+      <p className="text-xs font-semibold text-slate-500">{kpi.label}</p>
+      <p className={`mt-2 text-3xl font-semibold tracking-tight ${style.text}`}>{kpi.value}</p>
+      <div className="mt-3 flex items-center justify-between gap-2 text-xs text-slate-500">
+        <span className="line-clamp-2">{kpi.detail}</span>
+        <ArrowRight className="size-3.5 opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" />
       </div>
-    </div>
+    </Link>
   );
 }
 
-function DashboardSignalList({ items, empty }: { items: DashboardCalendarItem[]; empty: string }) {
+function RadarPanel({ title, count, actionHref, actionLabel, children }: { title: string; count?: number; actionHref?: string; actionLabel?: string; children: ReactNode }) {
   return (
-    <div className="space-y-2">
-      {items.length ? items.map((item) => <DashboardSignalRow key={item.id} item={item} />) : <Empty text={empty} />}
-    </div>
+    <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
+      <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0 border-b border-slate-100 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-base">{title}</CardTitle>
+          {typeof count === "number" ? <Badge variant="outline" className="rounded-full bg-slate-50">{count}</Badge> : null}
+        </div>
+        {actionHref && actionLabel ? (
+          <Button asChild variant="ghost" size="sm" className="h-8 rounded-lg px-2 text-xs text-slate-500 hover:text-slate-950">
+            <Link href={actionHref}>{actionLabel}</Link>
+          </Button>
+        ) : null}
+      </CardHeader>
+      <CardContent className="p-4">{children}</CardContent>
+    </Card>
   );
 }
 
-function DashboardSignalRow({ item }: { item: DashboardCalendarItem }) {
-  const d = days(item.date);
-  const overdue = d < 0;
-  const today = d === 0;
+function ItemList({ items, empty, compact = false }: { items: DashboardRadarItem[]; empty: string; compact?: boolean }) {
+  return <div className="space-y-2">{items.length ? items.map((item) => <DashboardItemRow key={item.id} item={item} compact={compact} />) : <Empty text={empty} />}</div>;
+}
+
+function DashboardItemRow({ item, compact }: { item: DashboardRadarItem; compact?: boolean }) {
+  const style = severityStyles[item.severity];
   return (
-    <Link href={item.href} className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 ${overdue ? "border-red-200 bg-red-50/70" : today ? "border-amber-200 bg-amber-50/70" : "border-slate-200 bg-white hover:bg-slate-50"}`}>
+    <Link href={item.href} className={`group flex items-center gap-3 rounded-xl border px-3 ${compact ? "py-2.5" : "py-3"} transition ${style.row}`}>
+      <span className={`mt-1 size-2.5 shrink-0 rounded-full ${style.dot}`} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold text-slate-950"><TextWithLinks value={item.title} /></p>
-        <p className="mt-0.5 truncate text-xs text-slate-500">{item.kind} · {item.subtitle} · {fmt(item.date)}</p>
+        <p className="mt-0.5 truncate text-xs text-slate-500">{kindLabels[item.kind]} · {item.subtitle}{item.meta ? ` · ${item.meta}` : ""}</p>
       </div>
-      <Badge variant={overdue ? "destructive" : "secondary"} className={overdue ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-50" : today ? "border-amber-200 bg-amber-100 text-amber-800 hover:bg-amber-100" : "bg-slate-100 text-slate-600 hover:bg-slate-100"}>{overdue ? "Vencida" : today ? "Hoy" : `En ${d} días`}</Badge>
+      <div className="hidden shrink-0 items-center gap-2 2xl:flex">
+        <SeverityBadge severity={item.severity} />
+      </div>
+      <ArrowRight className="size-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-slate-700" />
     </Link>
+  );
+}
+
+function SeverityBadge({ severity }: { severity: DashboardSeverity }) {
+  return <Badge variant="outline" className={`rounded-full ${severityStyles[severity].badge}`}>{severityLabel[severity]}</Badge>;
+}
+
+function LastProgressCard({ progress }: { progress: DashboardRadar["lastProgress"] }) {
+  return (
+    <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
+      <CardHeader className="border-b border-slate-100 px-5 py-4">
+        <div className="flex items-center gap-2">
+          <div className="grid size-9 place-items-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100">
+            <Target className="size-4" />
+          </div>
+          <CardTitle className="text-base">Último avance / dónde quedé</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent className="p-5">
+        {progress ? (
+          <div className="grid gap-4 lg:grid-cols-[0.8fr_1fr_1.1fr_0.8fr] lg:items-center">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Último frente</p>
+              <p className="mt-2 text-lg font-semibold text-slate-950">{progress.projectName}</p>
+              <Button asChild variant="outline" size="sm" className="mt-3 rounded-xl">
+                <Link href={progress.projectHref}>Abrir proyecto</Link>
+              </Button>
+            </div>
+            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Última acción</p>
+              <p className="mt-2 text-sm font-semibold capitalize text-slate-950">{progress.action}</p>
+              <p className="mt-1 line-clamp-2 text-sm text-slate-500">{progress.description}</p>
+              <p className="mt-2 text-xs text-slate-400">{fmt(progress.when)}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Siguiente paso sugerido</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">{progress.nextStep}</p>
+              <Button asChild className="mt-3 rounded-xl bg-slate-950 hover:bg-slate-800">
+                <Link href={progress.nextHref}>Continuar<ArrowRight className="ml-2 size-4" /></Link>
+              </Button>
+            </div>
+            <div className="rounded-2xl bg-blue-50 p-4 text-blue-700 ring-1 ring-blue-100">
+              <Clock3 className="mb-3 size-5" />
+              <p className="text-sm font-semibold">Nexo reconstruyó tu contexto.</p>
+              <p className="mt-1 text-xs leading-5 text-blue-600">Esta tarjeta sale del registro de actividad, no de carga manual.</p>
+            </div>
+          </div>
+        ) : (
+          <Empty text="Todavía no hay actividad suficiente para reconstruir dónde quedaste." />
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -237,7 +338,7 @@ function dateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function DashboardCalendar({ items }: { items: DashboardCalendarItem[] }) {
+function OperationalCalendar({ items }: { items: DashboardRadarItem[] }) {
   const [selectedDate, setSelectedDate] = useState(dateKey(new Date(TODAY)));
   const monthDate = new Date(TODAY);
   const year = monthDate.getFullYear();
@@ -247,17 +348,20 @@ function DashboardCalendar({ items }: { items: DashboardCalendarItem[] }) {
   const startOffset = (first.getDay() + 6) % 7;
   const cells: (Date | null)[] = [...Array.from({ length: startOffset }, () => null), ...Array.from({ length: last.getDate() }, (_, index) => new Date(year, month, index + 1))];
   while (cells.length % 7 !== 0) cells.push(null);
-  const itemsByDate = new Map<string, DashboardCalendarItem[]>();
+
+  const itemsByDate = new Map<string, DashboardRadarItem[]>();
   for (const item of items) {
+    if (!item.date) continue;
     const key = dateKey(new Date(item.date));
     itemsByDate.set(key, [...(itemsByDate.get(key) || []), item]);
   }
   const selectedItems = itemsByDate.get(selectedDate) || [];
+
   return (
-    <DashboardPanel title="Calendario mensual">
+    <RadarPanel title="Calendario operativo" count={items.length} actionHref="/tasks" actionLabel="Ver agenda">
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-sm font-semibold capitalize text-slate-900">{new Intl.DateTimeFormat("es-AR", { month: "long", year: "numeric" }).format(monthDate)}</p>
-        <Badge variant="secondary">{items.length} señales</Badge>
+        <div className="flex items-center gap-1 text-xs text-slate-500"><CalendarDays className="size-3.5" /> señales</div>
       </div>
       <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-slate-400">
         {["L", "M", "M", "J", "V", "S", "D"].map((day, index) => <div key={`${day}-${index}`} className="py-1">{day}</div>)}
@@ -268,12 +372,14 @@ function DashboardCalendar({ items }: { items: DashboardCalendarItem[] }) {
           const dayItems = cell ? itemsByDate.get(dateKey(cell)) || [] : [];
           const isToday = cell && dateKey(cell) === dateKey(new Date(TODAY));
           const selected = cell && dateKey(cell) === selectedDate;
+          const maxSeverity = getMaxSeverity(dayItems);
           return (
-            <button key={key} type="button" disabled={!cell} onClick={() => cell && setSelectedDate(dateKey(cell))} className={`relative h-11 rounded-md border text-xs transition ${!cell ? "border-transparent bg-transparent" : selected ? "border-slate-950 bg-slate-950 text-white" : isToday ? "border-amber-300 bg-amber-50 text-slate-950" : "border-slate-100 bg-white hover:border-slate-300"}`}>
+            <button key={key} type="button" disabled={!cell} onClick={() => cell && setSelectedDate(dateKey(cell))} className={`relative h-10 rounded-lg border text-xs transition ${!cell ? "border-transparent bg-transparent" : selected ? "border-slate-950 bg-slate-950 text-white" : isToday ? "border-amber-300 bg-amber-50 text-slate-950" : dayItems.length ? "border-slate-200 bg-white hover:border-slate-400" : "border-slate-100 bg-white hover:border-slate-300"}`}>
               {cell ? cell.getDate() : ""}
               {dayItems.length ? (
                 <span className="absolute bottom-1 left-1/2 flex -translate-x-1/2 gap-0.5">
-                  {dayItems.slice(0, 3).map((item) => <span key={item.id} className={`size-1.5 rounded-full ${item.tone === "critical" ? "bg-red-500" : item.tone === "high" ? "bg-orange-500" : item.tone === "medium" ? "bg-blue-500" : "bg-slate-400"}`} />)}
+                  {dayItems.slice(0, 3).map((item) => <span key={item.id} className={`size-1.5 rounded-full ${severityStyles[item.severity].dot}`} />)}
+                  {dayItems.length > 3 ? <span className={`size-1.5 rounded-full ${severityStyles[maxSeverity].dot}`} /> : null}
                 </span>
               ) : null}
             </button>
@@ -281,16 +387,28 @@ function DashboardCalendar({ items }: { items: DashboardCalendarItem[] }) {
         })}
       </div>
       <div className="mt-4 space-y-2">
-        {selectedItems.length ? selectedItems.map((item) => (
-          <Link key={item.id} href={item.href} className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2 hover:bg-slate-100">
+        {selectedItems.length ? selectedItems.slice(0, 4).map((item) => (
+          <Link key={item.id} href={item.href} className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 ${severityStyles[item.severity].row}`}>
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium">{item.title}</p>
-              <p className="text-xs text-slate-500">{item.kind}</p>
+              <p className="truncate text-sm font-semibold text-slate-950">{item.title}</p>
+              <p className="text-xs text-slate-500">{kindLabels[item.kind]} · {item.meta || fmt(item.date)}</p>
             </div>
-            <Badge variant="outline">{fmt(item.date)}</Badge>
+            <SeverityBadge severity={item.severity} />
           </Link>
-        )) : <p className="rounded-lg border border-dashed border-slate-200 px-3 py-5 text-center text-sm text-slate-500">Sin elementos para ese día.</p>}
+        )) : <p className="rounded-xl border border-dashed border-slate-200 px-3 py-5 text-center text-sm text-slate-500">Sin elementos para ese día.</p>}
       </div>
-    </DashboardPanel>
+    </RadarPanel>
   );
+}
+
+function getMaxSeverity(items: DashboardRadarItem[]): DashboardSeverity {
+  return items.reduce<DashboardSeverity>((current, item) => (severityWeight(item.severity) > severityWeight(current) ? item.severity : current), "info");
+}
+
+function severityWeight(severity: DashboardSeverity) {
+  if (severity === "critical") return 4;
+  if (severity === "high") return 3;
+  if (severity === "medium") return 2;
+  if (severity === "low") return 1;
+  return 0;
 }
