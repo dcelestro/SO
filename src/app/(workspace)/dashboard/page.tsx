@@ -1,6 +1,8 @@
 import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { getPrisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const prisma = getPrisma();
   const [tasks, projects, assets, ideas] = await Promise.all([
