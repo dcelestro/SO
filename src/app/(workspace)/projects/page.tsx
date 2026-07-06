@@ -21,7 +21,11 @@ export default async function ProjectsPage() {
         },
         select: {
           id: true,
+          title: true,
           status: true,
+          priority: true,
+          isCritical: true,
+          dueDate: true,
         },
       },
     },
