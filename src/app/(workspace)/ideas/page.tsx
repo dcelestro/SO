@@ -1,6 +1,8 @@
 import { IdeasView } from "@/components/ideas/ideas-view";
 import { getPrisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function IdeasPage() {
   const prisma = getPrisma();
   const [ideas, projects, areas] = await Promise.all([
