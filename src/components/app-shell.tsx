@@ -50,7 +50,7 @@ const groups: NavGroup[] = [
       { href: "/dashboard", label: "Inicio", Icon: Home },
       { href: "/explorer", label: "Explorador", Icon: FolderTree },
       { href: "/tasks", label: "Tareas", Icon: CheckSquare2 },
-      { href: "/focus", label: "Foco semanal", Icon: Target },
+      { href: "/foco", label: "Foco semanal", Icon: Target },
     ],
   },
   {
