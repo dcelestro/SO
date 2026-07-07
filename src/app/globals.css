@@ -50,7 +50,7 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
+  --background: #d1d5dc;
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -75,7 +75,11 @@
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
   --nexo-hero: #0f172a;
-  --nexo-accent: #f59e0b;
+  --nexo-accent: #4c1d95;
+  --nexo-card-border: rgba(76, 29, 149, 0.34);
+  --nexo-card-border-strong: rgba(76, 29, 149, 0.62);
+  --nexo-card-accent: #4c1d95;
+  --nexo-workspace-bg: #d1d5dc;
   --nexo-critical: #ef4444;
   --nexo-warning: #f97316;
   --nexo-focus: #2563eb;
@@ -134,5 +138,43 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer utilities {
+  .bg-\[\#f1f3f6\],
+  .bg-\[\#f7f8fa\],
+  .bg-\[\#edf1f5\] {
+    background-color: var(--nexo-workspace-bg) !important;
+  }
+}
+
+@layer components {
+  [data-slot="card"],
+  section.overflow-hidden.rounded-2xl.border,
+  div.overflow-hidden.rounded-xl.border,
+  div.overflow-hidden.rounded-2xl.border {
+    border-color: var(--nexo-card-border) !important;
+    box-shadow:
+      0 1px 2px rgba(30, 27, 75, 0.07),
+      0 0 0 1px rgba(76, 29, 149, 0.08) !important;
+  }
+
+  [data-slot="card"].border-l-4,
+  section.overflow-hidden.rounded-2xl.border-l-4,
+  div.overflow-hidden.rounded-xl.border-l-4,
+  div.rounded-xl.border-l-4 {
+    border-left-color: var(--nexo-card-accent) !important;
+  }
+
+  [data-slot="card-header"],
+  .border-b.border-slate-100,
+  .border-b.border-slate-200 {
+    border-bottom-color: rgba(76, 29, 149, 0.18) !important;
+  }
+
+  .ring-slate-200\/70,
+  .ring-slate-200 {
+    --tw-ring-color: rgba(76, 29, 149, 0.18) !important;
   }
 }
