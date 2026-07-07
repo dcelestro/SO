@@ -93,7 +93,7 @@ export async function saveWeeklyFocus(payload: unknown) {
     return current;
   });
 
-  revalidatePath("/focus");
+  revalidatePath("/foco");
   revalidatePath("/dashboard");
 
   return { success: true, id: focus.id };
