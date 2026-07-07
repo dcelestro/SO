@@ -135,9 +135,11 @@
   }
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
   }
   html {
     @apply font-sans;
+    overflow-x: hidden;
   }
 }
 
@@ -181,4 +183,12 @@
   .ring-slate-200 {
     --tw-ring-color: rgba(76, 29, 149, 0.18) !important;
   }
+}
+
+.mx-auto.max-w-7xl,
+[class~="max-w-7xl"] {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
