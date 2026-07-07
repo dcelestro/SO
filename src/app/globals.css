@@ -142,6 +142,10 @@
 }
 
 @layer utilities {
+  .max-w-7xl {
+    max-width: none !important;
+  }
+
   .bg-\[\#f1f3f6\],
   .bg-\[\#f7f8fa\],
   .bg-\[\#edf1f5\] {
