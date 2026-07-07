@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { BoardStatus, BoardType, VisualBoard } from "@/lib/board-types";
@@ -27,6 +37,8 @@ export function BoardsLibrary() {
   const [boards, setBoards] = useState<VisualBoard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deleteBoard, setDeleteBoard] = useState<VisualBoard | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -48,6 +60,24 @@ export function BoardsLibrary() {
       active = false;
     };
   }, []);
+
+  async function removeBoard() {
+    if (!deleteBoard) return;
+
+    setDeleting(true);
+    setError("");
+    const response = await fetch(`/api/boards/${deleteBoard.id}`, { method: "DELETE" });
+    setDeleting(false);
+
+    if (!response.ok) {
+      const body = await response.json().catch(() => null);
+      setError(body?.error ?? "No se pudo eliminar la pizarra.");
+      return;
+    }
+
+    setBoards((current) => current.filter((board) => board.id !== deleteBoard.id));
+    setDeleteBoard(null);
+  }
 
   return (
     <div className="space-y-6">
@@ -83,16 +113,39 @@ export function BoardsLibrary() {
                 </p>
                 <p className="mt-2 line-clamp-1 text-sm text-slate-600">{board.description || "Sin descripción"}</p>
               </div>
-              <Button asChild size="sm" variant="ghost" className="self-start sm:self-auto">
-                <Link href={`/boards/${board.id}`}>
-                  Abrir
-                  <ExternalLink className="size-4" />
-                </Link>
-              </Button>
+              <div className="flex shrink-0 gap-2 self-start sm:self-auto">
+                <Button asChild size="sm" variant="ghost">
+                  <Link href={`/boards/${board.id}`}>
+                    Abrir
+                    <ExternalLink className="size-4" />
+                  </Link>
+                </Button>
+                <Button size="sm" variant="ghost" className="text-red-700 hover:bg-red-50 hover:text-red-800" onClick={() => setDeleteBoard(board)}>
+                  <Trash2 className="size-4" />
+                  Eliminar
+                </Button>
+              </div>
             </article>
           ))}
         </div>
       )}
+
+      <AlertDialog open={!!deleteBoard} onOpenChange={(open) => !open && setDeleteBoard(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar eliminación</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vas a eliminar la pizarra “{deleteBoard?.title ?? "seleccionada"}”. Esta acción borra la pizarra completa y no la deja archivada.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction disabled={deleting} onClick={removeBoard} className="bg-red-600 text-white hover:bg-red-700">
+              {deleting ? "Eliminando..." : "Eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
