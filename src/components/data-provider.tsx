@@ -1,6 +1,8 @@
 "use client";
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { initialData } from "@/lib/demo-data";
+
 type Data = typeof initialData;
 export type DataSource = "loading" | "backend" | "demo" | "local-storage" | "error";
 type Ctx = {
@@ -10,14 +12,35 @@ type Ctx = {
   dataError: string | null;
   reset: () => void;
 };
+
+const emptyData: Data = {
+  ...initialData,
+  areas: [],
+  projects: [],
+  tasks: [],
+  assets: [],
+  ideas: [],
+  dues: [],
+  reviews: [],
+  focus: {
+    mainProjectId: "",
+    secondaryProjectIds: [],
+    avoidProjectIds: [],
+    weeklyGoal: "",
+    notes: "",
+  },
+};
+
 const DataContext = createContext<Ctx | null>(null);
+
 export function DataProvider({ children }: { children: React.ReactNode }) {
-  const [data, setData] = useState<Data>(initialData);
+  const [data, setData] = useState<Data>(emptyData);
   const [dataSource, setDataSource] = useState<DataSource>("loading");
   const [dataError, setDataError] = useState<string | null>(null);
+
   useEffect(() => {
-    const demoMode =
-      new URLSearchParams(window.location.search).get("data") === "demo";
+    const demoMode = new URLSearchParams(window.location.search).get("data") === "demo";
+
     if (demoMode) {
       try {
         const saved = localStorage.getItem("nexo-data");
@@ -32,6 +55,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.warn("[Nexo] No se pudo leer localStorage demo", error);
       }
+
       Promise.resolve().then(() => {
         setData(initialData);
         setDataSource("demo");
@@ -39,61 +63,45 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       });
       return;
     }
-    const resources = [
-      "assets",
-      "ideas",
-      "due-items",
-      "reviews",
-      "weekly-focus/current",
-    ];
+
+    const resources = ["areas", "projects", "tasks", "assets", "ideas"] as const;
+
     Promise.all(
-      resources.map((r) =>
-        fetch(`/api/${r}`).then((x) => {
-          if (!x.ok) throw new Error(`API no disponible: ${r} (${x.status})`);
-          return x.json();
+      resources.map((resource) =>
+        fetch(`/api/${resource}`, { cache: "no-store" }).then((response) => {
+          if (!response.ok) throw new Error(`API no disponible: ${resource} (${response.status})`);
+          return response.json();
         }),
       ),
     )
-      .then(([assets, ideas, dues, reviews, focus]) => {
-        setData(prev => ({
-          ...prev,
+      .then(([areas, projects, tasks, assets, ideas]) => {
+        setData({
+          ...emptyData,
+          areas,
+          projects,
+          tasks,
           assets,
           ideas,
-          dues,
-          reviews,
-          focus: {
-            mainProjectId: focus?.mainProjectId || "",
-            secondaryProjectIds:
-              focus?.secondaryProjects?.map(
-                (x: { projectId: string }) => x.projectId,
-              ) || [],
-            avoidProjectIds:
-              focus?.avoidProjects?.map(
-                (x: { projectId: string }) => x.projectId,
-              ) || [],
-            weeklyGoal: focus?.weeklyGoal || "",
-            notes: focus?.notes || "",
-          },
-        }));
+        });
         setDataSource("backend");
         setDataError(null);
         console.info("[Nexo] Fuente de datos activa: backend real");
       })
       .catch((error) => {
-        const message =
-          error instanceof Error ? error.message : "Error de backend";
+        const message = error instanceof Error ? error.message : "Error de backend";
+        setData(emptyData);
         setDataSource("error");
         setDataError(message);
-        console.error(
-          "[Nexo] Backend real falló. No se aplica fallback silencioso.",
-          error,
-        );
+        console.error("[Nexo] Backend real falló. No se aplica fallback silencioso.", error);
       });
   }, []);
+
   useEffect(() => {
-    if (["backend", "demo", "local-storage"].includes(dataSource))
+    if (["demo", "local-storage"].includes(dataSource)) {
       localStorage.setItem("nexo-data", JSON.stringify(data));
+    }
   }, [data, dataSource]);
+
   return (
     <DataContext.Provider
       value={{
@@ -101,13 +109,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         setData,
         dataSource,
         dataError,
-        reset: () => setData(initialData),
+        reset: () => setData(dataSource === "demo" || dataSource === "local-storage" ? initialData : emptyData),
       }}
     >
       {children}
     </DataContext.Provider>
   );
 }
+
 export function useData() {
   const value = useContext(DataContext);
   if (!value) throw new Error("useData requiere DataProvider");
